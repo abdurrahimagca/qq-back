@@ -1,0 +1,22 @@
+FROM golang:1.24.5-alpine
+
+WORKDIR /app
+
+# Install air for live reloading and other dev dependencies
+RUN apk add --no-cache git ca-certificates tzdata && \
+    go install github.com/air-verse/air@latest && \
+    go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest && \
+    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# Copy go mod files
+COPY go.mod ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3003
+
+# Default command (can be overridden)
+CMD ["air", "-c", ".air.toml"]

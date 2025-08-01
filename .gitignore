@@ -1,0 +1,52 @@
+# Environment files
+.*env*
+!.env.example
+!docker/.env.example
+
+# Build artifacts
+bin/
+tmp/
+dist/
+build/
+
+
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+go.work
+go.work.sum
+
+# Docker env files
+docker/.env
+docker/.env.prod
+
+# IDE files
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Air live reload temp files
+tmp/
+

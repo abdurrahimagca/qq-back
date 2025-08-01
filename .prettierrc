@@ -1,0 +1,31 @@
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": "*.sql",
+      "options": {
+        "parser": "sql",
+        "printWidth": 120,
+        "tabWidth": 2,
+        "useTabs": false,
+        "keywordCase": "upper",
+        "identifierCase": "lower",
+        "functionCase": "upper"
+      }
+    },
+    {
+      "files": "*.go",
+      "options": {
+        "parser": "go",
+        "printWidth": 100,
+        "tabWidth": 4,
+        "useTabs": true
+      }
+    }
+  ]
+}
