@@ -1,4 +1,3 @@
---- up
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE auth_provider AS ENUM ('email_otp', 'google_oauth');
@@ -41,9 +40,3 @@ CREATE INDEX idx_auth_otp_auth_id ON auth_otp_codes(auth_id);
 CREATE INDEX idx_auth_otp_expires ON auth_otp_codes(expires_at);
 CREATE INDEX idx_users_auth_id ON users(auth_id);
 CREATE INDEX idx_users_username ON users(username);
-
---- down
-DROP TABLE IF EXISTS auth_otp_codes;
-DROP TABLE IF EXISTS auth;
-DROP TABLE IF EXISTS users;
-DROP TYPE IF EXISTS auth_provider;

@@ -1,5 +1,8 @@
 .PHONY: dev-up dev-up-d dev-build dev-down dev-logs dev-shell dev-restart build build-docker migrate-up migrate-down migrate-create migrate-force migrate-version db-shell db-reset sqlc-generate fmt test test-cover  clean mod-tidy mod-download fmt-check lint
 
+# Load environment variables
+include docker/.env.dev
+
 # Development commands (Docker only)
 dev-up:
 	cd docker && docker compose up

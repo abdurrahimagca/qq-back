@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS auth_otp_codes;
+DROP TABLE IF EXISTS auth;
+DROP TYPE IF EXISTS privacy_level;
+DROP TYPE IF EXISTS auth_provider;
