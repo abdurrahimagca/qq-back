@@ -5,17 +5,19 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/service/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Handler struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	config *environment.Config
 }
 
-func NewHandler(db *pgxpool.Pool) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *pgxpool.Pool, config *environment.Config) *Handler {
+	return &Handler{db: db, config: config}
 }
 
 type SignupRequest struct {
@@ -55,7 +57,7 @@ func (h *Handler) SignInOrUpWithOtp(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(context.Background())
 
-	err = auth.CreateUserIfNotExistWithOtpService(req.Email, tx)
+	err = auth.CreateUserIfNotExistWithOtpService(req.Email, tx, h.config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -1,46 +1,12 @@
 package mail
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
+	"github.com/resend/resend-go/v2"
 )
-
-var httpClient = &http.Client{
-	Timeout: 30 * time.Second,
-}
-
-func resend(ctx context.Context, url string, key string, body map[string]interface{}) error {
-	jsonData, err := json.Marshal(body)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+key)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("resend API error: %d", resp.StatusCode)
-	}
-
-	return nil
-}
 
 type SendOTPMailParams struct {
 	To     string
@@ -49,12 +15,22 @@ type SendOTPMailParams struct {
 }
 
 func SendOTPMail(ctx context.Context, params SendOTPMailParams) error {
-	body := map[string]interface{}{
-		"from":    "qq@homelab-kaleici.space",
-		"to":      params.To,
-		"subject": "Your OTP Code For QQ",
-		"html":    fmt.Sprintf("Thanks for using QQ. Your OTP Code is %s", params.Code),
+	client := resend.NewClient(params.Config.Resend.Key)
+
+	emailParams := &resend.SendEmailRequest{
+		From:    "QQ Quote <qq@homelab-kaleici.space>",
+		To:      []string{params.To},
+		Html:    fmt.Sprintf("<p>Thanks for using QQ Quote!</p><p>Your OTP code is: <strong>%s</strong></p><p>This code will expire in 3 minutes.</p>", params.Code),
+		Subject: "Your OTP Code For QQ Quote",
 	}
 
-	return resend(ctx, params.Config.Resend.Url, params.Config.Resend.Key, body)
+	sent, err := client.Emails.Send(emailParams)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	// Log the sent email ID for debugging (optional)
+	_ = sent // sent.Id contains the email ID if needed for logging
+
+	return nil
 }

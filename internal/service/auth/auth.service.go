@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/abdurrahimagca/qq-back/internal/external/mail"
 	"github.com/abdurrahimagca/qq-back/internal/repository/auth"
@@ -15,7 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func createFirstTimeUserWithOtp(email string, tx pgx.Tx) error {
+func createFirstTimeUserWithOtp(email string, tx pgx.Tx, config *environment.Config) error {
 	userName := strings.Split(email, "@")[0] + "_" + uuid.New().String()[:8]
 
 	otpCode := uuid.New().String()[:6]
@@ -37,8 +38,9 @@ func createFirstTimeUserWithOtp(email string, tx pgx.Tx) error {
 		return err
 	}
 	err = mail.SendOTPMail(context.Background(), mail.SendOTPMailParams{
-		To:   email,
-		Code: otpCode,
+		To:     email,
+		Code:   otpCode,
+		Config: config,
 	})
 
 	if err != nil {
@@ -47,7 +49,7 @@ func createFirstTimeUserWithOtp(email string, tx pgx.Tx) error {
 
 	return nil
 }
-func handleAlreadyExistsUser(email string, userID pgtype.UUID, tx pgx.Tx) error {
+func handleAlreadyExistsUser(email string, userID pgtype.UUID, tx pgx.Tx, config *environment.Config) error {
 	otpCode := uuid.New().String()[:6]
 
 	hash := sha256.Sum256([]byte(otpCode))
@@ -60,8 +62,9 @@ func handleAlreadyExistsUser(email string, userID pgtype.UUID, tx pgx.Tx) error 
 	}
 
 	err = mail.SendOTPMail(context.Background(), mail.SendOTPMailParams{
-		To:   email,
-		Code: otpCode,
+		To:     email,
+		Code:   otpCode,
+		Config: config,
 	})
 
 	if err != nil {
@@ -71,14 +74,14 @@ func handleAlreadyExistsUser(email string, userID pgtype.UUID, tx pgx.Tx) error 
 	return nil
 }
 
-func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx) error {
+func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environment.Config) error {
 	user, _ := auth.GetUserByEmail(context.Background(), tx, email)
 	if user != nil {
-		return handleAlreadyExistsUser(email, user.ID, tx)
+		return handleAlreadyExistsUser(email, user.ID, tx, config)
 
 	}
 
-	err := createFirstTimeUserWithOtp(email, tx)
+	err := createFirstTimeUserWithOtp(email, tx, config)
 
 	if err != nil {
 		return err
