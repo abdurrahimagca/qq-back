@@ -6,11 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"strings"
-
+	"time"
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/abdurrahimagca/qq-back/internal/external/mail"
 	"github.com/abdurrahimagca/qq-back/internal/repository/auth"
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v5"
@@ -90,22 +91,58 @@ func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environ
 
 	return nil
 }
-func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *environment.Config) error {
+func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *environment.Config) (*pgtype.UUID, *string, error) {
 	user, err := auth.GetUserIdAndEmailByOtpCode(context.Background(), tx, otpCode)
 
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	if user.Email != email {
-		return errors.New("otp code is incorrect")
+		return nil, nil, errors.New("otp code is incorrect")
 	}
 
 	err = auth.DeleteOtpCodeById(context.Background(), tx, user.ID)
 
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	return nil
+	return &user.ID, &user.Email, nil
+}
+
+func GenerateTokens(config *environment.Config, userID pgtype.UUID , userEmail string) (string, string, error) {
+	accessToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"sub": userID,
+			"email": userEmail,
+			"exp": time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Second).Unix(),
+			"iat": time.Now().Unix(),
+			"iss": config.Token.Issuer,
+			"aud": config.Token.Audience,
+		},
+	).SignedString([]byte(config.Token.Secret))
+
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"sub": userID,
+			"email": userEmail,
+			"exp": time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Second).Unix(),
+			"iat": time.Now().Unix(),
+			"iss": config.Token.Issuer,
+			"aud": config.Token.Audience,
+		},
+	).SignedString([]byte(config.Token.Secret))
+
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }

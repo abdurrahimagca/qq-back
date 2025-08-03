@@ -32,12 +32,13 @@ type SignupResponse struct {
 
 type SigninRequest struct {
 	Email   string `json:"email"`
-	OtpCode string `json:"otp_code"`
+	OtpCode string `json:"otpCode"`
 }
 
 type SigninResponse struct {
-	Message string `json:"message"`
-	UserID  string `json:"user_id,omitempty"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	Message      string `json:"message"`
 }
 
 func (h *Handler) SignInOrUpWithOtp(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +99,7 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 	otpHash := sha256.Sum256([]byte(req.OtpCode))
 	otpHashString := hex.EncodeToString(otpHash[:])
 
-	err = auth.VerifyOtpCodeService(req.Email, otpHashString, tx, h.config)
+	userID, userEmail, err := auth.VerifyOtpCodeService(req.Email, otpHashString, tx, h.config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -109,8 +110,17 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, refreshToken, err := auth.GenerateTokens(h.config, *userID, *userEmail)
+
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(SigninResponse{
-		Message: "OTP code verified",
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		Message:      "Login successful",
 	})
 }

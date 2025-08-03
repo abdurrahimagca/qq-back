@@ -3,6 +3,7 @@ package environment
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -11,11 +12,18 @@ type ResendConfig struct {
 	Url string
 	Key string
 }
-
+type TokenConfig struct {
+	Secret                 string
+	AccessTokenExpireTime  int
+	RefreshTokenExpireTime int
+	Issuer                 string
+	Audience               string
+}
 type Config struct {
-	APIKey string
-	Resend ResendConfig
+	APIKey      string
+	Resend      ResendConfig
 	DatabaseURL string
+	Token       TokenConfig
 }
 
 func Load() (*Config, error) {
@@ -28,6 +36,14 @@ func Load() (*Config, error) {
 	if err := godotenv.Load(envFileName); err != nil {
 		return nil, fmt.Errorf("error loading %s: %w", envFileName, err)
 	}
+	accessTokenExpireTime, err := strconv.Atoi(os.Getenv("ACCESS_TOKEN_EXPIRE_TIME"))
+	if err != nil {
+		return nil, fmt.Errorf("error converting ACCESS_TOKEN_EXPIRE_TIME to int: %w", err)
+	}
+	refreshTokenExpireTime, err := strconv.Atoi(os.Getenv("REFRESH_TOKEN_EXPIRE_TIME"))
+	if err != nil {
+		return nil, fmt.Errorf("error converting REFRESH_TOKEN_EXPIRE_TIME to int: %w", err)
+	}
 
 	return &Config{
 		APIKey: os.Getenv("API_KEY"),
@@ -36,5 +52,12 @@ func Load() (*Config, error) {
 			Key: os.Getenv("RESEND_KEY"),
 		},
 		DatabaseURL: os.Getenv("DATABASE_URL"),
+		Token: TokenConfig{
+			Secret:                 os.Getenv("TOKEN_SECRET"),
+			AccessTokenExpireTime:  accessTokenExpireTime,
+			RefreshTokenExpireTime: refreshTokenExpireTime,
+			Issuer:                 os.Getenv("ISSUER"),
+			Audience:               os.Getenv("AUDIENCE"),
+		},
 	}, nil
 }
