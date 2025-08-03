@@ -1,12 +1,13 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
-	"github.com/abdurrahimagca/qq-back/internal/handler/middleware"
+	"github.com/abdurrahimagca/qq-back/internal/router"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -16,14 +17,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading environment", err)
 	}
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		middleware.ApiAuth(config, w, r, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"message": "Hello, This is working World!"})
-		})
-
-	})
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, config.DatabaseURL)
+	if err != nil {
+		log.Fatal("Error creating pool", err)
+	}
+	defer pool.Close()
+	router.Router(mux, pool, config)
 
 	log.Println("Server is running on port 3003")
 	log.Fatal(http.ListenAndServe(":3003", mux))

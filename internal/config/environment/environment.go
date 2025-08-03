@@ -15,6 +15,7 @@ type ResendConfig struct {
 type Config struct {
 	APIKey string
 	Resend ResendConfig
+	DatabaseURL string
 }
 
 func Load() (*Config, error) {
@@ -34,5 +35,6 @@ func Load() (*Config, error) {
 			Url: os.Getenv("RESEND_URL"),
 			Key: os.Getenv("RESEND_KEY"),
 		},
+		DatabaseURL: os.Getenv("DATABASE_URL"),
 	}, nil
 }

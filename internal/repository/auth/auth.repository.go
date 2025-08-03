@@ -20,7 +20,6 @@ type CreateFirstTimeUserParams struct {
 type CreateFirstTimeUserWithOtpResult struct {
 	UserID    *pgtype.UUID
 	OtpCodeID *pgtype.UUID
-	Error     error
 }
 
 func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFirstTimeUserParams) (CreateFirstTimeUserWithOtpResult, error) {
@@ -32,9 +31,7 @@ func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFir
 		ProviderID: pgtype.Text{String: params.ProviderID, Valid: params.ProviderID != ""},
 	})
 	if err != nil {
-		return CreateFirstTimeUserWithOtpResult{
-			Error: err,
-		}, nil
+		return CreateFirstTimeUserWithOtpResult{}, err
 	}
 
 	userID, err := queries.InsertUser(ctx, db.InsertUserParams{
@@ -42,9 +39,7 @@ func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFir
 		Username: params.Username,
 	})
 	if err != nil {
-		return CreateFirstTimeUserWithOtpResult{
-			Error: err,
-		}, nil
+		return CreateFirstTimeUserWithOtpResult{}, err
 	}
 
 	otpCode, err := queries.InsertAuthOtpCode(ctx, db.InsertAuthOtpCodeParams{
@@ -52,9 +47,7 @@ func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFir
 		Code:   params.OtpCode,
 	})
 	if err != nil {
-		return CreateFirstTimeUserWithOtpResult{
-			Error: err,
-		}, nil
+		return CreateFirstTimeUserWithOtpResult{}, err
 	}
 
 	return CreateFirstTimeUserWithOtpResult{
