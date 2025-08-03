@@ -1,0 +1,3 @@
+ALTER TABLE users
+ALTER COLUMN display_name TYPE TEXT,
+ALTER COLUMN display_name DROP NOT NULL;

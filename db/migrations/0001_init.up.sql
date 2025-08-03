@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     privacy_level privacy_level NOT NULL DEFAULT 'public',
     auth_id UUID NOT NULL UNIQUE REFERENCES auth(id) ON DELETE CASCADE,
     username VARCHAR(512) NOT NULL UNIQUE,
-    display_name VARCHAR(512) NOT NULL,
+    display_name VARCHAR(512)  NULL,
     avatar_url VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

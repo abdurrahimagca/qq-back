@@ -119,7 +119,7 @@ type User struct {
 	PrivacyLevel PrivacyLevel     `json:"privacyLevel"`
 	AuthID       pgtype.UUID      `json:"authId"`
 	Username     string           `json:"username"`
-	DisplayName  string           `json:"displayName"`
+	DisplayName  pgtype.Text      `json:"displayName"`
 	AvatarUrl    pgtype.Text      `json:"avatarUrl"`
 	CreatedAt    pgtype.Timestamp `json:"createdAt"`
 	UpdatedAt    pgtype.Timestamp `json:"updatedAt"`
