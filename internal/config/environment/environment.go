@@ -7,8 +7,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type ResendConfig struct {
+	Url string
+	Key string
+}
+
 type Config struct {
 	APIKey string
+	Resend ResendConfig
 }
 
 func Load() (*Config, error) {
@@ -24,5 +30,9 @@ func Load() (*Config, error) {
 
 	return &Config{
 		APIKey: os.Getenv("API_KEY"),
+		Resend: ResendConfig{
+			Url: os.Getenv("RESEND_URL"),
+			Key: os.Getenv("RESEND_KEY"),
+		},
 	}, nil
 }

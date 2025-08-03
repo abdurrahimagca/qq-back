@@ -11,6 +11,66 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = $1) LIMIT 1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.PrivacyLevel,
+		&i.AuthID,
+		&i.Username,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.PrivacyLevel,
+		&i.AuthID,
+		&i.Username,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByOtpCode = `-- name: GetUserByOtpCode :one
+SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE auth_id = (SELECT auth_id FROM auth_otp_codes WHERE code = $1 AND expires_at > CURRENT_TIMESTAMP) LIMIT 1
+`
+
+func (q *Queries) GetUserByOtpCode(ctx context.Context, code string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByOtpCode, code)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.PrivacyLevel,
+		&i.AuthID,
+		&i.Username,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertAuth = `-- name: InsertAuth :one
 INSERT INTO auth (email, provider, provider_id)
 VALUES ($1, $2, $3)
@@ -71,6 +131,45 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const searchAuthByEmail = `-- name: SearchAuthByEmail :one
+SELECT id, email, provider, provider_id, is_suspended, created_at, updated_at FROM auth WHERE email = $1 LIMIT 1
+`
+
+func (q *Queries) SearchAuthByEmail(ctx context.Context, email string) (Auth, error) {
+	row := q.db.QueryRow(ctx, searchAuthByEmail, email)
+	var i Auth
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Provider,
+		&i.ProviderID,
+		&i.IsSuspended,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const searchUserByAuthID = `-- name: SearchUserByAuthID :one
+SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE auth_id = $1 LIMIT 1
+`
+
+func (q *Queries) SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, searchUserByAuthID, authID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.PrivacyLevel,
+		&i.AuthID,
+		&i.Username,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one

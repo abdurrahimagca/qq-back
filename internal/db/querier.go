@@ -11,9 +11,14 @@ import (
 )
 
 type Querier interface {
+	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetUserByOtpCode(ctx context.Context, code string) (User, error)
 	InsertAuth(ctx context.Context, arg InsertAuthParams) (pgtype.UUID, error)
 	InsertAuthOtpCode(ctx context.Context, arg InsertAuthOtpCodeParams) (pgtype.UUID, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error)
+	SearchAuthByEmail(ctx context.Context, email string) (Auth, error)
+	SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (User, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (pgtype.UUID, error)
 }
 

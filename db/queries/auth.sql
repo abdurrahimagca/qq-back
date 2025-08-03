@@ -18,3 +18,19 @@ UPDATE users
 SET username = sqlc.narg(username), display_name = sqlc.narg(display_name), avatar_url = sqlc.narg(avatar_url)
 WHERE id = sqlc.arg(id)
 RETURNING id;
+
+-- name: SearchUserByAuthID :one
+SELECT * FROM users WHERE auth_id = sqlc.arg(auth_id) LIMIT 1;
+
+-- name: SearchAuthByEmail :one
+SELECT * FROM auth WHERE email = sqlc.arg(email) LIMIT 1;
+
+-- name: GetUserByOtpCode :one
+SELECT * FROM users WHERE auth_id = (SELECT auth_id FROM auth_otp_codes WHERE code = sqlc.arg(code) AND expires_at > CURRENT_TIMESTAMP) LIMIT 1;
+
+
+-- name: GetUserByEmail :one
+SELECT * FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email)) LIMIT 1;
+
+-- name: GetUserByID :one
+SELECT * FROM users WHERE id = sqlc.arg(id) LIMIT 1;
