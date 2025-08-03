@@ -11,9 +11,10 @@ import (
 )
 
 type Querier interface {
+	DeleteOtpCodeById(ctx context.Context, id pgtype.UUID) error
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
-	GetUserByOtpCode(ctx context.Context, code string) (User, error)
+	GetUserIdAndEmailByOtpCode(ctx context.Context, code string) (GetUserIdAndEmailByOtpCodeRow, error)
 	InsertAuth(ctx context.Context, arg InsertAuthParams) (pgtype.UUID, error)
 	InsertAuthOtpCode(ctx context.Context, arg InsertAuthOtpCodeParams) (pgtype.UUID, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error)

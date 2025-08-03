@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strings"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
@@ -82,6 +83,25 @@ func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environ
 	}
 
 	err := createFirstTimeUserWithOtp(email, tx, config)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *environment.Config) error {
+	user, err := auth.GetUserIdAndEmailByOtpCode(context.Background(), tx, otpCode)
+
+	if err != nil {
+		return err
+	}
+
+	if user.Email != email {
+		return errors.New("otp code is incorrect")
+	}
+
+	err = auth.DeleteOtpCodeById(context.Background(), tx, user.ID)
 
 	if err != nil {
 		return err

@@ -33,6 +33,9 @@ func AuthRoute(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config)
 	// Public routes
 	mux.HandleFunc("/auth/signin-or-up-with-otp", 
 		middlewareChain.ChainFunc(handler.SignInOrUpWithOtp, publicAuthMiddlewares))
+
+	mux.HandleFunc("/auth/login-otp", 
+		middlewareChain.ChainFunc(handler.SignInWithOtpCode, publicAuthMiddlewares))
 	
 	// Protected routes (examples for future use)
 	// mux.HandleFunc("/auth/logout", 

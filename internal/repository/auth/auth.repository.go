@@ -56,10 +56,10 @@ func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFir
 	}, nil
 }
 
-func GetUserByOtpCode(ctx context.Context, tx pgx.Tx, code string) (*db.User, error) {
+func GetUserIdAndEmailByOtpCode(ctx context.Context, tx pgx.Tx, code string) (*db.GetUserIdAndEmailByOtpCodeRow, error) {
 	queries := db.New(tx)
 
-	user, err := queries.GetUserByOtpCode(ctx, code)
+	user, err := queries.GetUserIdAndEmailByOtpCode(ctx, code)
 
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func GetUserByEmail(ctx context.Context, tx pgx.Tx, email string) (*db.User, err
 	return &user, nil
 }
 
-func InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, code string) (error) {
+func InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, code string) error {
 	queries := db.New(tx)
 
 	// Get the user to find their auth_id
@@ -93,6 +93,18 @@ func InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx, userID pgtype.UUID,
 		AuthID: user.AuthID,
 		Code:   code,
 	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteOtpCodeById(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
+	queries := db.New(tx)
+
+	err := queries.DeleteOtpCodeById(ctx, id)
 
 	if err != nil {
 		return err

@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"encoding/hex"
+	"crypto/sha256"
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
@@ -74,3 +76,41 @@ func (h *Handler) SignInOrUpWithOtp(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
+	var req SigninRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" || req.OtpCode == "" {
+		http.Error(w, "Email and OTP code are required", http.StatusBadRequest)
+		return
+	}
+
+	tx, err := h.db.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(context.Background())
+
+	otpHash := sha256.Sum256([]byte(req.OtpCode))
+	otpHashString := hex.EncodeToString(otpHash[:])
+
+	err = auth.VerifyOtpCodeService(req.Email, otpHashString, tx, h.config)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := tx.Commit(context.Background()); err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(SigninResponse{
+		Message: "OTP code verified",
+	})
+}

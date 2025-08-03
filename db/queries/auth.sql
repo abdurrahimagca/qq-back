@@ -25,9 +25,17 @@ SELECT * FROM users WHERE auth_id = sqlc.arg(auth_id) LIMIT 1;
 -- name: SearchAuthByEmail :one
 SELECT * FROM auth WHERE email = sqlc.arg(email) LIMIT 1;
 
--- name: GetUserByOtpCode :one
-SELECT * FROM users WHERE auth_id = (SELECT auth_id FROM auth_otp_codes WHERE code = sqlc.arg(code) AND expires_at > CURRENT_TIMESTAMP) LIMIT 1;
 
+-- name: DeleteOtpCodeById :exec
+DELETE FROM auth_otp_codes WHERE id = sqlc.arg(id);
+
+-- name: GetUserIdAndEmailByOtpCode :one
+SELECT users.id, auth.email 
+FROM users 
+JOIN auth ON users.auth_id = auth.id 
+JOIN auth_otp_codes ON auth.id = auth_otp_codes.auth_id 
+WHERE auth_otp_codes.code = sqlc.arg(code) AND auth_otp_codes.expires_at > CURRENT_TIMESTAMP 
+LIMIT 1;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email)) LIMIT 1;

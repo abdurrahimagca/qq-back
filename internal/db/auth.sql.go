@@ -11,6 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteOtpCodeById = `-- name: DeleteOtpCodeById :exec
+DELETE FROM auth_otp_codes WHERE id = $1
+`
+
+func (q *Queries) DeleteOtpCodeById(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteOtpCodeById, id)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = $1) LIMIT 1
 `
@@ -51,23 +60,24 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	return i, err
 }
 
-const getUserByOtpCode = `-- name: GetUserByOtpCode :one
-SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE auth_id = (SELECT auth_id FROM auth_otp_codes WHERE code = $1 AND expires_at > CURRENT_TIMESTAMP) LIMIT 1
+const getUserIdAndEmailByOtpCode = `-- name: GetUserIdAndEmailByOtpCode :one
+SELECT users.id, auth.email 
+FROM users 
+JOIN auth ON users.auth_id = auth.id 
+JOIN auth_otp_codes ON auth.id = auth_otp_codes.auth_id 
+WHERE auth_otp_codes.code = $1 AND auth_otp_codes.expires_at > CURRENT_TIMESTAMP 
+LIMIT 1
 `
 
-func (q *Queries) GetUserByOtpCode(ctx context.Context, code string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByOtpCode, code)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.PrivacyLevel,
-		&i.AuthID,
-		&i.Username,
-		&i.DisplayName,
-		&i.AvatarUrl,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
+type GetUserIdAndEmailByOtpCodeRow struct {
+	ID    pgtype.UUID `json:"id"`
+	Email string      `json:"email"`
+}
+
+func (q *Queries) GetUserIdAndEmailByOtpCode(ctx context.Context, code string) (GetUserIdAndEmailByOtpCodeRow, error) {
+	row := q.db.QueryRow(ctx, getUserIdAndEmailByOtpCode, code)
+	var i GetUserIdAndEmailByOtpCodeRow
+	err := row.Scan(&i.ID, &i.Email)
 	return i, err
 }
 
