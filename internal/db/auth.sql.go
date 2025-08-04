@@ -20,6 +20,15 @@ func (q *Queries) DeleteOtpCodeById(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const deleteOtpCodeEntryByAuthID = `-- name: DeleteOtpCodeEntryByAuthID :exec
+DELETE FROM auth_otp_codes WHERE auth_id = $1
+`
+
+func (q *Queries) DeleteOtpCodeEntryByAuthID(ctx context.Context, authID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteOtpCodeEntryByAuthID, authID)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, privacy_level, auth_id, username, display_name, avatar_url, created_at, updated_at FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = $1) LIMIT 1
 `
@@ -61,7 +70,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 }
 
 const getUserIdAndEmailByOtpCode = `-- name: GetUserIdAndEmailByOtpCode :one
-SELECT users.id, auth.email 
+SELECT users.id, auth.email , auth.id as auth_id
 FROM users 
 JOIN auth ON users.auth_id = auth.id 
 JOIN auth_otp_codes ON auth.id = auth_otp_codes.auth_id 
@@ -70,14 +79,15 @@ LIMIT 1
 `
 
 type GetUserIdAndEmailByOtpCodeRow struct {
-	ID    pgtype.UUID `json:"id"`
-	Email string      `json:"email"`
+	ID     pgtype.UUID `json:"id"`
+	Email  string      `json:"email"`
+	AuthID pgtype.UUID `json:"authId"`
 }
 
 func (q *Queries) GetUserIdAndEmailByOtpCode(ctx context.Context, code string) (GetUserIdAndEmailByOtpCodeRow, error) {
 	row := q.db.QueryRow(ctx, getUserIdAndEmailByOtpCode, code)
 	var i GetUserIdAndEmailByOtpCodeRow
-	err := row.Scan(&i.ID, &i.Email)
+	err := row.Scan(&i.ID, &i.Email, &i.AuthID)
 	return i, err
 }
 

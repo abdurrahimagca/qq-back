@@ -30,7 +30,7 @@ SELECT * FROM auth WHERE email = sqlc.arg(email) LIMIT 1;
 DELETE FROM auth_otp_codes WHERE id = sqlc.arg(id);
 
 -- name: GetUserIdAndEmailByOtpCode :one
-SELECT users.id, auth.email 
+SELECT users.id, auth.email , auth.id as auth_id
 FROM users 
 JOIN auth ON users.auth_id = auth.id 
 JOIN auth_otp_codes ON auth.id = auth_otp_codes.auth_id 
@@ -42,3 +42,6 @@ SELECT * FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(
 
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = sqlc.arg(id) LIMIT 1;
+
+-- name: DeleteOtpCodeEntryByAuthID :exec
+DELETE FROM auth_otp_codes WHERE auth_id = sqlc.arg(auth_id);

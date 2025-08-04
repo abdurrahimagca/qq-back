@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/abdurrahimagca/qq-back/internal/external/mail"
@@ -76,20 +77,34 @@ func handleAlreadyExistsUser(email string, userID pgtype.UUID, tx pgx.Tx, config
 	return nil
 }
 
-func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environment.Config) error {
+type CreateUserIfNotExistWithOtpServiceResult struct {
+	IsNewUser bool
+	Error     error
+}
+
+func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environment.Config) (CreateUserIfNotExistWithOtpServiceResult, error) {
 	user, _ := auth.GetUserByEmail(context.Background(), tx, email)
 	if user != nil {
-		return handleAlreadyExistsUser(email, user.ID, tx, config)
+		return CreateUserIfNotExistWithOtpServiceResult{
+			IsNewUser: false,
+			Error:     handleAlreadyExistsUser(email, user.ID, tx, config),
+		}, nil
 
 	}
 
 	err := createFirstTimeUserWithOtp(email, tx, config)
 
 	if err != nil {
-		return err
+		return CreateUserIfNotExistWithOtpServiceResult{
+			IsNewUser: false,
+			Error:     err,
+		}, nil
 	}
 
-	return nil
+	return CreateUserIfNotExistWithOtpServiceResult{
+		IsNewUser: true,
+		Error:     nil,
+	}, nil
 }
 func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *environment.Config) (*pgtype.UUID, *string, error) {
 	user, err := auth.GetUserIdAndEmailByOtpCode(context.Background(), tx, otpCode)
@@ -102,7 +117,7 @@ func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *envir
 		return nil, nil, errors.New("otp code is incorrect")
 	}
 
-	err = auth.DeleteOtpCodeById(context.Background(), tx, user.ID)
+	err = auth.DeleteOtpCodeEntryByAuthID(context.Background(), tx, user.AuthID)
 
 	if err != nil {
 		return nil, nil, err
@@ -111,16 +126,16 @@ func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *envir
 	return &user.ID, &user.Email, nil
 }
 
-func GenerateTokens(config *environment.Config, userID pgtype.UUID , userEmail string) (string, string, error) {
+func GenerateTokens(config *environment.Config, userID pgtype.UUID, userEmail string) (string, string, error) {
 	accessToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub": userID,
+			"sub":   userID,
 			"email": userEmail,
-			"exp": time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Second).Unix(),
-			"iat": time.Now().Unix(),
-			"iss": config.Token.Issuer,
-			"aud": config.Token.Audience,
+			"exp":   time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Second).Unix(),
+			"iat":   time.Now().Unix(),
+			"iss":   config.Token.Issuer,
+			"aud":   config.Token.Audience,
 		},
 	).SignedString([]byte(config.Token.Secret))
 
@@ -131,12 +146,12 @@ func GenerateTokens(config *environment.Config, userID pgtype.UUID , userEmail s
 	refreshToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub": userID,
+			"sub":   userID,
 			"email": userEmail,
-			"exp": time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Second).Unix(),
-			"iat": time.Now().Unix(),
-			"iss": config.Token.Issuer,
-			"aud": config.Token.Audience,
+			"exp":   time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Second).Unix(),
+			"iat":   time.Now().Unix(),
+			"iss":   config.Token.Issuer,
+			"aud":   config.Token.Audience,
 		},
 	).SignedString([]byte(config.Token.Secret))
 

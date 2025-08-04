@@ -112,3 +112,15 @@ func DeleteOtpCodeById(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
 
 	return nil
 }
+
+func DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.Tx, authID pgtype.UUID) error {
+	queries := db.New(tx)
+
+	err := queries.DeleteOtpCodeEntryByAuthID(ctx, authID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

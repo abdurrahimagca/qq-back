@@ -28,6 +28,7 @@ type SignupRequest struct {
 
 type SignupResponse struct {
 	Message string `json:"message"`
+	IsNewUser bool `json:"isNewUser"`
 }
 
 type SigninRequest struct {
@@ -60,7 +61,7 @@ func (h *Handler) SignInOrUpWithOtp(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(context.Background())
 
-	err = auth.CreateUserIfNotExistWithOtpService(req.Email, tx, h.config)
+	result, err := auth.CreateUserIfNotExistWithOtpService(req.Email, tx, h.config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -73,7 +74,8 @@ func (h *Handler) SignInOrUpWithOtp(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(SignupResponse{
-		Message: "OTP code sent to your email",
+		Message:   "OTP code sent to your email",
+		IsNewUser: result.IsNewUser,
 	})
 }
 
