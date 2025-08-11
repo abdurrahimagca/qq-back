@@ -124,3 +124,14 @@ func DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.Tx, authID pgtype.UU
 
 	return nil
 }
+
+func GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, error) {
+	queries := db.New(tx)
+
+	user, err := queries.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}

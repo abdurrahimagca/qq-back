@@ -3,12 +3,13 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"encoding/hex"
-	"crypto/sha256"
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
+	"github.com/abdurrahimagca/qq-back/internal/db"
+	"github.com/abdurrahimagca/qq-back/internal/handler/middleware"
 	"github.com/abdurrahimagca/qq-back/internal/service/auth"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -98,10 +99,7 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(context.Background())
 
-	otpHash := sha256.Sum256([]byte(req.OtpCode))
-	otpHashString := hex.EncodeToString(otpHash[:])
-
-	userID, userEmail, err := auth.VerifyOtpCodeService(req.Email, otpHashString, tx, h.config)
+	userID, userEmail, err := auth.VerifyOtpCodeService(req.Email, req.OtpCode, tx, h.config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -124,5 +122,35 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		Message:      "Login successful",
+	})
+}
+
+type UserProfileResponse struct {
+	ID          string  `json:"id"`
+	Username    string  `json:"username"`
+	DisplayName *string `json:"displayName"`
+	AvatarURL   *string `json:"avatarUrl,omitempty"`
+	PrivacyLevel *db.PrivacyLevel `json:"privacyLevel,omitempty"`
+}
+
+func (h *Handler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*db.User)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
+	var displayName *string
+	if user.DisplayName.Valid {
+		displayName = &user.DisplayName.String
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(UserProfileResponse{
+		ID:          uuid.UUID(user.ID.Bytes).String(),
+		Username:    user.Username,
+		DisplayName: displayName,
+		AvatarURL:   &user.AvatarUrl.String,
+		PrivacyLevel: &user.PrivacyLevel,
 	})
 }

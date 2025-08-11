@@ -1,4 +1,4 @@
-.PHONY: dev-up dev-up-d dev-build dev-down dev-logs dev-shell dev-restart build build-docker migrate-up migrate-down migrate-create migrate-force migrate-version db-shell db-reset sqlc-generate fmt test test-cover  clean mod-tidy mod-download fmt-check lint
+.PHONY: dev-up dev-up-d dev-build dev-down dev-up-tunnel dev-up-tunnel-d dev-logs dev-shell dev-restart build build-docker migrate-up migrate-down migrate-create migrate-force migrate-version db-shell db-reset sqlc-generate fmt test test-cover  clean mod-tidy mod-download fmt-check lint
 
 # Load environment variables
 include docker/.env.dev
@@ -6,6 +6,12 @@ include docker/.env.dev
 # Development commands (Docker only)
 dev-up:
 	cd docker && docker compose up
+
+dev-up-tunnel:
+	cd docker && docker compose up && ngrok http 3003
+
+dev-up-tunnel-d:
+	cd docker && docker compose up -d && ngrok http 3003
 
 dev-up-d:
 	cd docker && docker compose up -d

@@ -1,11 +1,14 @@
 package router
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/handler/auth"
+	"github.com/abdurrahimagca/qq-back/internal/handler/middleware"
 	middlewareChain "github.com/abdurrahimagca/qq-back/internal/middleware"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -37,9 +40,29 @@ func AuthRoute(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config)
 	mux.HandleFunc("/auth/login-otp", 
 		middlewareChain.ChainFunc(handler.SignInWithOtpCode, publicAuthMiddlewares))
 	
-	// Protected routes (examples for future use)
-	// mux.HandleFunc("/auth/logout", 
-	//     middlewareChain.ChainFunc(handler.Logout, protectedAuthMiddlewares))
-	// mux.HandleFunc("/auth/refresh", 
-	//     middlewareChain.ChainFunc(handler.Refresh, protectedAuthMiddlewares))
+	// Protected routes requiring JWT authentication
+	userAuthMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tx, err := db.BeginTx(context.Background(), pgx.TxOptions{})
+			if err != nil {
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			defer tx.Rollback(context.Background())
+
+			middleware.UserAuth(config, w, r, func(w http.ResponseWriter, r *http.Request) {
+				if err := tx.Commit(context.Background()); err != nil {
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+				next.ServeHTTP(w, r)
+			}, tx)
+		})
+	}
+
+	protectedAuthMiddlewares := middlewareChain.Chain(userAuthMiddleware)
+
+	// User profile route
+	mux.HandleFunc("/auth/profile", 
+		middlewareChain.ChainFunc(handler.GetUserProfile, protectedAuthMiddlewares))
 }

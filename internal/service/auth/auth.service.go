@@ -107,7 +107,10 @@ func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environ
 	}, nil
 }
 func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *environment.Config) (*pgtype.UUID, *string, error) {
-	user, err := auth.GetUserIdAndEmailByOtpCode(context.Background(), tx, otpCode)
+	hash := sha256.Sum256([]byte(otpCode))
+	hashedOtpCode := hex.EncodeToString(hash[:])
+	
+	user, err := auth.GetUserIdAndEmailByOtpCode(context.Background(), tx, hashedOtpCode)
 
 	if err != nil {
 		return nil, nil, err
@@ -130,9 +133,9 @@ func GenerateTokens(config *environment.Config, userID pgtype.UUID, userEmail st
 	accessToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub":   userID,
+			"sub":   uuid.UUID(userID.Bytes).String(),
 			"email": userEmail,
-			"exp":   time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Second).Unix(),
+			"exp":   time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Minute).Unix(),
 			"iat":   time.Now().Unix(),
 			"iss":   config.Token.Issuer,
 			"aud":   config.Token.Audience,
@@ -146,9 +149,9 @@ func GenerateTokens(config *environment.Config, userID pgtype.UUID, userEmail st
 	refreshToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub":   userID,
+			"sub":   uuid.UUID(userID.Bytes).String(),
 			"email": userEmail,
-			"exp":   time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Second).Unix(),
+			"exp":   time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Minute).Unix(),
 			"iat":   time.Now().Unix(),
 			"iss":   config.Token.Issuer,
 			"aud":   config.Token.Audience,
@@ -160,4 +163,48 @@ func GenerateTokens(config *environment.Config, userID pgtype.UUID, userEmail st
 	}
 
 	return accessToken, refreshToken, nil
+}
+func ValidateAndGetUserFromAccessToken(tokenString string, config *environment.Config, tx pgx.Tx) (user *db.User, err error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(config.Token.Secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	
+	// Verify issuer and audience
+	if claims["iss"] != config.Token.Issuer {
+		return nil, errors.New("invalid issuer")
+	}
+	if claims["aud"] != config.Token.Audience {
+		return nil, errors.New("invalid audience")
+	}
+	
+	userIdStr, ok := claims["sub"].(string)
+	if !ok || userIdStr == "" {
+		return nil, errors.New("invalid user ID in token")
+	}
+	
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		return nil, errors.New("invalid user ID format")
+	}
+	
+	user, userErr := auth.GetUserByID(context.Background(), tx, pgtype.UUID{Bytes: userId, Valid: true})
+	if userErr != nil {
+		return nil, userErr
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	return user, nil
 }
