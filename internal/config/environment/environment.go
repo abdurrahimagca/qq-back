@@ -25,7 +25,7 @@ type R2Config struct {
 	TokenValue    string
 	AccessKeyID   string
 	SecretAccessKey string
-	
+	AccountID       string
 }
 
 type Config struct {
@@ -76,6 +76,7 @@ func Load() (*Config, error) {
 			TokenValue:    os.Getenv("R2_TOKEN_VALUE"),
 			AccessKeyID:  os.Getenv("R2_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("R2_SECRET_ACCESS_KEY"),
+			AccountID: os.Getenv("R2_ACCOUNT_ID"),
 		},
 	}, nil
 }
