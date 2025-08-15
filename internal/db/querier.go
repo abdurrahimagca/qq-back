@@ -20,7 +20,7 @@ type Querier interface {
 	InsertAuthOtpCode(ctx context.Context, arg InsertAuthOtpCodeParams) (pgtype.UUID, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error)
 	SearchAuthByEmail(ctx context.Context, email string) (Auth, error)
-	SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (User, error)
+	SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (SearchUserByAuthIDRow, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (pgtype.UUID, error)
 }
 

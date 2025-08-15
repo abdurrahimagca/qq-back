@@ -7,7 +7,7 @@ import (
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
-	"github.com/abdurrahimagca/qq-back/internal/handler/middleware"
+	"github.com/abdurrahimagca/qq-back/internal/middleware"
 	"github.com/abdurrahimagca/qq-back/internal/service/auth"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -28,8 +28,8 @@ type SignupRequest struct {
 }
 
 type SignupResponse struct {
-	Message string `json:"message"`
-	IsNewUser bool `json:"isNewUser"`
+	Message   string `json:"message"`
+	IsNewUser bool   `json:"isNewUser"`
 }
 
 type SigninRequest struct {
@@ -126,10 +126,9 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 }
 
 type UserProfileResponse struct {
-	ID          string  `json:"id"`
-	Username    string  `json:"username"`
-	DisplayName *string `json:"displayName"`
-	AvatarURL   *string `json:"avatarUrl,omitempty"`
+	ID           string           `json:"id"`
+	Username     string           `json:"username"`
+	DisplayName  *string          `json:"displayName"`
 	PrivacyLevel *db.PrivacyLevel `json:"privacyLevel,omitempty"`
 }
 
@@ -147,10 +146,9 @@ func (h *Handler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(UserProfileResponse{
-		ID:          uuid.UUID(user.ID.Bytes).String(),
-		Username:    user.Username,
-		DisplayName: displayName,
-		AvatarURL:   &user.AvatarUrl.String,
+		ID:           uuid.UUID(user.ID.Bytes).String(),
+		Username:     user.Username,
+		DisplayName:  displayName,
 		PrivacyLevel: &user.PrivacyLevel,
 	})
 }

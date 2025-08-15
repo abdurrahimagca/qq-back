@@ -19,23 +19,31 @@ func GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, 
 	return &user, nil
 }
 
-func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, displayName *string, avatarURL *string) error {
+func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, displayName *string, avatarKeySmall *string, avatarKeyMedium *string, avatarKeyLarge *string) error {
 	queries := db.New(tx)
 	newData := db.UpdateUserParams{}
 	if displayName != nil {
 		newData.DisplayName = pgtype.Text{String: *displayName, Valid: true}
 	}
-	if avatarURL != nil {
-		newData.AvatarUrl = pgtype.Text{String: *avatarURL, Valid: true}
+	if avatarKeySmall != nil {
+		newData.AvatarKeySmall = pgtype.Text{String: *avatarKeySmall, Valid: true}
 	}
-	if displayName == nil && avatarURL == nil {
+	if avatarKeyMedium != nil {
+		newData.AvatarKeyMedium = pgtype.Text{String: *avatarKeyMedium, Valid: true}
+	}
+	if avatarKeyLarge != nil {
+		newData.AvatarKeyLarge = pgtype.Text{String: *avatarKeyLarge, Valid: true}
+	}
+	if displayName == nil && avatarKeySmall == nil && avatarKeyMedium == nil && avatarKeyLarge == nil {
 		return nil
 	}
 
 	_, err := queries.UpdateUser(ctx, db.UpdateUserParams{
 		ID:          userID,
 		DisplayName: newData.DisplayName,
-		AvatarUrl:   newData.AvatarUrl,
+		AvatarKeySmall: newData.AvatarKeySmall,
+		AvatarKeyMedium: newData.AvatarKeyMedium,
+		AvatarKeyLarge: newData.AvatarKeyLarge,
 	})
 
 	if err != nil {

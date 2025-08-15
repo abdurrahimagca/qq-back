@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
-	"github.com/abdurrahimagca/qq-back/internal/handler/middleware"
-	middlewareChain "github.com/abdurrahimagca/qq-back/internal/middleware"
+	"github.com/abdurrahimagca/qq-back/internal/middleware"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -20,7 +20,7 @@ func Router(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config) {
 	HealthRoute(api, db, config)
 
 	// Base API middleware chain for all /api/v1/* routes
-	baseMiddlewares := middlewareChain.Chain(
+	baseMiddlewares := middleware.Chain(
 	// Add common middlewares here (CORS, logging, etc.)
 	// middleware.CORS,
 	// middleware.Logging,
@@ -31,11 +31,12 @@ func Router(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config) {
 
 	// Root route for health check
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		middleware.ApiAuth(config, w, r, func(w http.ResponseWriter, r *http.Request) {
+		middleware.ApiAuth(config)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			time := time.Now().Format(time.RFC3339)
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]string{"message": "Hello, This is working World!", "time": time})
-		})
+		}))
 	})
+	MediaRoute(api, db, config)
 }
