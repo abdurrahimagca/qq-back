@@ -30,11 +30,11 @@ func ProcessSingleImage(file multipart.File) (*ProcessedImage, error) {
 	}
 
 	// Create thumbnail
-	thumb := resize.Thumbnail(2000, 2000, img, resize.Lanczos3)
+	thumb := resize.Thumbnail(2048, 1080, img, resize.Lanczos3)
 
 	// Encode to webp
 	var buf bytes.Buffer
-	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 85)
+	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 80)
 	if err != nil {
 		return nil, err
 	}
