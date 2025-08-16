@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	"mime/multipart"
 
+	_ "github.com/adrium/goheif"
 	"golang.org/x/image/draw"
 )
 
@@ -54,10 +55,10 @@ const (
 )
 
 var TARGET_IMAGE_SIZES = map[ImageTypeTarget]map[ImageVariant]ImageSize{
-	POST_SQUARE:    {SMALL: {Width: 1024, Height: 1024}, MEDIUM: {Width: 10424, Height: 1024}, LARGE: {Width: 1024, Height: 1024}},
+	POST_SQUARE:    {SMALL: {Width: 600, Height: 600}, MEDIUM: {Width: 900, Height: 900}, LARGE: {Width: 1024, Height: 1024}},
 	POST_LANDSCAPE: {SMALL: {Width: 1024, Height: 600}, MEDIUM: {Width: 1024, Height: 600}, LARGE: {Width: 1024, Height: 600}},
 	POST_PORTRAIT:  {SMALL: {Width: 600, Height: 1024}, MEDIUM: {Width: 600, Height: 1024}, LARGE: {Width: 600, Height: 1024}},
-	AVATAR:         {SMALL: {Width: 100, Height: 100}, MEDIUM: {Width: 100, Height: 100}, LARGE: {Width: 100, Height: 100}},
+	AVATAR:         {SMALL: {Width: 300, Height: 300}, MEDIUM: {Width: 600, Height: 600}, LARGE: {Width: 900, Height: 900}},
 }
 
 type ImageSizeWithVariant struct {
@@ -100,11 +101,42 @@ func ProcessImage(file multipart.File, imageType ImageTypeTarget, variants []Ima
 	result := ImageServiceResult{}
 
 	for _, size := range imageSizes {
-		// Create a new RGBA image with the target size
-		dst := image.NewRGBA(image.Rect(0, 0, size.ImageSize.Width, size.ImageSize.Height))
+		// Calculate crop dimensions to maintain aspect ratio
+		srcBounds := img.Bounds()
+		srcWidth := srcBounds.Dx()
+		srcHeight := srcBounds.Dy()
 
-		// Resize the image using CatmullRom interpolation
-		draw.CatmullRom.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
+		targetWidth := size.ImageSize.Width
+		targetHeight := size.ImageSize.Height
+
+		// Calculate scale factors for both dimensions
+		scaleX := float64(targetWidth) / float64(srcWidth)
+		scaleY := float64(targetHeight) / float64(srcHeight)
+
+		// Use the larger scale factor to ensure the image covers the entire target area
+		scale := scaleX
+		if scaleY > scaleX {
+			scale = scaleY
+		}
+
+		// Calculate the scaled source dimensions
+		scaledWidth := int(float64(srcWidth) * scale)
+		scaledHeight := int(float64(srcHeight) * scale)
+
+		// Calculate crop offsets to center the image
+		cropX := (scaledWidth - targetWidth) / 2
+		cropY := (scaledHeight - targetHeight) / 2
+
+		// Create intermediate scaled image
+		scaledImg := image.NewRGBA(image.Rect(0, 0, scaledWidth, scaledHeight))
+		draw.CatmullRom.Scale(scaledImg, scaledImg.Bounds(), img, img.Bounds(), draw.Over, nil)
+
+		// Create final cropped image
+		dst := image.NewRGBA(image.Rect(0, 0, targetWidth, targetHeight))
+
+		// Copy the cropped portion
+		cropRect := image.Rect(cropX, cropY, cropX+targetWidth, cropY+targetHeight)
+		draw.Draw(dst, dst.Bounds(), scaledImg, cropRect.Min, draw.Src)
 
 		// Encode the resized image to JPEG format
 		var buf bytes.Buffer

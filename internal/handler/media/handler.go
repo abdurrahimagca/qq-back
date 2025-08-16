@@ -2,6 +2,7 @@ package media
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
@@ -36,6 +37,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
 	bucketService, err := bucket.NewService(h.config.R2)
 	if err != nil {
+		log.Printf("Failed to create bucket service: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -47,9 +49,10 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uploadResult, err := bucketService.UploadImage(image, imageTypeTarget, true)
+	uploadResult, err := bucketService.UploadImage(image, imageTypeTarget, false)
 
 	if err != nil {
+		log.Printf("Failed to upload image: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}

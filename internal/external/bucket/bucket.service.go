@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"mime/multipart"
+	"sync"
 	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
@@ -37,13 +38,8 @@ func NewService(cfg environment.R2Config) (*Service, error) {
 	accessKeyId := cfg.AccessKeyID
 	accessKeySecret := cfg.SecretAccessKey
 	accountId := cfg.AccountID
-	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		r2Endpoint := fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId)
-		return aws.Endpoint{URL: r2Endpoint}, nil
-	})
 
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithEndpointResolverWithOptions(resolver),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
 		config.WithRegion("auto"),
 	)
@@ -51,7 +47,9 @@ func NewService(cfg environment.R2Config) (*Service, error) {
 		log.Fatal(err)
 	}
 
-	client := s3.NewFromConfig(awsCfg)
+	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
+	})
 
 	return &Service{
 		client: client,
@@ -67,12 +65,13 @@ func (s *Service) UploadImage(file multipart.File, imageType ImageTypeTarget, up
 
 	uploadResult := UploadImageResult{}
 
-	processAndUpload := func(image *ProcessedImage, variant ImageVariant) (*UploadImageResultItem, error) {
+	processAndUpload := func(image *ProcessedImage) (*UploadImageResultItem, error) {
 		if image == nil {
 			return nil, nil
 		}
 
-		key := fmt.Sprintf("%s-%d-%s.avif", imageType, variant, uuid.New().String())
+		key := fmt.Sprintf("%s-%s", uuid.New().String(), time.Now().Format("2006-01-02"))
+
 		_, err := s.client.PutObject(context.TODO(), &s3.PutObjectInput{
 			Bucket:      aws.String(s.config.BucketName),
 			Key:         aws.String(key),
@@ -96,25 +95,60 @@ func (s *Service) UploadImage(file multipart.File, imageType ImageTypeTarget, up
 		return resultItem, nil
 	}
 
+	// Upload all variants in parallel
+	var wg sync.WaitGroup
+	var uploadErr error
+	var mu sync.Mutex
+
 	if imageServiceResult.Small != nil {
-		uploadResult.Small, err = processAndUpload(imageServiceResult.Small, SMALL)
-		if err != nil {
-			return UploadImageResult{}, err
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result, err := processAndUpload(imageServiceResult.Small)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				uploadErr = err
+				return
+			}
+			uploadResult.Small = result
+		}()
 	}
 
 	if imageServiceResult.Medium != nil {
-		uploadResult.Medium, err = processAndUpload(imageServiceResult.Medium, MEDIUM)
-		if err != nil {
-			return UploadImageResult{}, err
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result, err := processAndUpload(imageServiceResult.Medium)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				uploadErr = err
+				return
+			}
+			uploadResult.Medium = result
+		}()
 	}
 
 	if imageServiceResult.Large != nil {
-		uploadResult.Large, err = processAndUpload(imageServiceResult.Large, LARGE)
-		if err != nil {
-			return UploadImageResult{}, err
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result, err := processAndUpload(imageServiceResult.Large)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				uploadErr = err
+				return
+			}
+			uploadResult.Large = result
+		}()
+	}
+
+	wg.Wait()
+
+	if uploadErr != nil {
+		return UploadImageResult{}, uploadErr
 	}
 
 	uploadResult.isSuccess = true
@@ -125,8 +159,8 @@ func (s *Service) GetPresignedURL(key string, expiresIn time.Duration) (string, 
 	presignClient := s3.NewPresignClient(s.client)
 	presignResult, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
 		ResponseExpires: aws.Time(time.Now().Add(expiresIn)),
-		Bucket: aws.String(s.config.BucketName),
-		Key:    aws.String(key),
+		Bucket:          aws.String(s.config.BucketName),
+		Key:             aws.String(key),
 	})
 	if err != nil {
 		return "", err

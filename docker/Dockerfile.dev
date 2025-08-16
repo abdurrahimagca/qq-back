@@ -1,10 +1,10 @@
-FROM golang:1.24.5-alpine
+FROM golang:1.23
 
 WORKDIR /app
 
 # Install air for live reloading and other dev dependencies including AOM for AVIF
-RUN apk add --no-cache git ca-certificates tzdata aom-dev && \
-    go install github.com/air-verse/air@latest && \
+RUN apt-get update && apt-get install -y git ca-certificates tzdata libaom-dev && \
+    go install github.com/air-verse/air@v1.61.5 && \
     go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest && \
     go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
