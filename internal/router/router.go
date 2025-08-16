@@ -18,6 +18,7 @@ func Router(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config) {
 	// Route groups (no middleware yet - added per route as needed)
 	AuthRoute(api, db, config)
 	HealthRoute(api, db, config)
+	MediaRoute(api, db, config)
 
 	// Base API middleware chain for all /api/v1/* routes
 	baseMiddlewares := middleware.Chain(
@@ -38,5 +39,4 @@ func Router(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config) {
 			json.NewEncoder(w).Encode(map[string]string{"message": "Hello, This is working World!", "time": time})
 		}))
 	})
-	MediaRoute(api, db, config)
 }

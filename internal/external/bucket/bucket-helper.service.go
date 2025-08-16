@@ -34,7 +34,7 @@ func ProcessSingleImage(file multipart.File) (*ProcessedImage, error) {
 
 	// Encode to webp
 	var buf bytes.Buffer
-	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 80)
+	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 85)
 	if err != nil {
 		return nil, err
 	}
