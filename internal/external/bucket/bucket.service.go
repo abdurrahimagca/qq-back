@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"mime/multipart"
-	"sync"
 	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
@@ -18,15 +17,8 @@ import (
 )
 
 type UploadImageResult struct {
-	Small     *UploadImageResultItem
-	Medium    *UploadImageResultItem
-	Large     *UploadImageResultItem
+	Key *string
 	isSuccess bool
-}
-
-type UploadImageResultItem struct {
-	Key       string
-	PublicURL *string
 }
 
 type Service struct {
@@ -51,107 +43,47 @@ func NewService(cfg environment.R2Config) (*Service, error) {
 		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
 	})
 
+	
+
 	return &Service{
 		client: client,
 		config: cfg,
 	}, nil
 }
 
-func (s *Service) UploadImage(file multipart.File, imageType ImageTypeTarget, uploadImagePublic bool) (UploadImageResult, error) {
-	imageServiceResult, err := ProcessImage(file, imageType, []ImageVariant{SMALL, MEDIUM, LARGE})
+func (s *Service) UploadImage(file multipart.File, uploadImagePublic bool) (UploadImageResult, error) {
+	totalStart := time.Now()
+	
+	processedImage, err := ProcessSingleImage(file)
 	if err != nil {
 		return UploadImageResult{}, err
 	}
 
-	uploadResult := UploadImageResult{}
+	uploadStart := time.Now()
+	log.Printf("Starting single image upload...")
 
-	processAndUpload := func(image *ProcessedImage) (*UploadImageResultItem, error) {
-		if image == nil {
-			return nil, nil
-		}
+	key := fmt.Sprintf("%s-%s", uuid.New().String(), time.Now().Format("2006-01-02"))
 
-		key := fmt.Sprintf("%s-%s", uuid.New().String(), time.Now().Format("2006-01-02"))
+	_, err = s.client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(s.config.BucketName),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(processedImage.Data),
+		ContentType: aws.String(processedImage.MimeType),
+	})
 
-		_, err := s.client.PutObject(context.TODO(), &s3.PutObjectInput{
-			Bucket:      aws.String(s.config.BucketName),
-			Key:         aws.String(key),
-			Body:        bytes.NewReader(image.Data),
-			ContentType: aws.String(image.MimeType),
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		resultItem := &UploadImageResultItem{
-			Key: key,
-		}
-
-		if uploadImagePublic {
-			publicURL := fmt.Sprintf("%s/%s", s.config.URL, key)
-			resultItem.PublicURL = &publicURL
-		}
-
-		return resultItem, nil
+	if err != nil {
+		return UploadImageResult{}, err
 	}
 
-	// Upload all variants in parallel
-	var wg sync.WaitGroup
-	var uploadErr error
-	var mu sync.Mutex
 
-	if imageServiceResult.Small != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			result, err := processAndUpload(imageServiceResult.Small)
-			mu.Lock()
-			defer mu.Unlock()
-			if err != nil {
-				uploadErr = err
-				return
-			}
-			uploadResult.Small = result
-		}()
+	log.Printf("Total upload time: %v", time.Since(uploadStart))
+	
+	uploadResult := UploadImageResult{
+		Key:    &key, // Use Medium field for single image
+		isSuccess: true,
 	}
-
-	if imageServiceResult.Medium != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			result, err := processAndUpload(imageServiceResult.Medium)
-			mu.Lock()
-			defer mu.Unlock()
-			if err != nil {
-				uploadErr = err
-				return
-			}
-			uploadResult.Medium = result
-		}()
-	}
-
-	if imageServiceResult.Large != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			result, err := processAndUpload(imageServiceResult.Large)
-			mu.Lock()
-			defer mu.Unlock()
-			if err != nil {
-				uploadErr = err
-				return
-			}
-			uploadResult.Large = result
-		}()
-	}
-
-	wg.Wait()
-
-	if uploadErr != nil {
-		return UploadImageResult{}, uploadErr
-	}
-
-	uploadResult.isSuccess = true
+	
+	log.Printf("Total operation time: %v", time.Since(totalStart))
 	return uploadResult, nil
 }
 

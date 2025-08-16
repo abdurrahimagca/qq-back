@@ -1,21 +1,20 @@
 module github.com/abdurrahimagca/qq-back
 
-go 1.23.0
+go 1.24.2
 
 toolchain go1.24.5
 
 require (
-	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/aws/aws-sdk-go-v2 v1.38.0
 	github.com/aws/aws-sdk-go-v2/config v1.31.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.0
+	github.com/davidbyttow/govips/v2 v2.16.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
 	github.com/resend/resend-go/v2 v2.21.0
-	golang.org/x/image v0.30.0
 )
 
 require (
@@ -33,11 +32,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.33.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.37.0 // indirect
 	github.com/aws/smithy-go v1.22.5 // indirect
+	github.com/cshum/vipsgen v1.1.1
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/image v0.18.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 )

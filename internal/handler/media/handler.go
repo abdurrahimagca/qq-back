@@ -34,7 +34,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer image.Close()
 
-	target := r.URL.Query().Get("target")
+	// target := r.URL.Query().Get("target")
 	bucketService, err := bucket.NewService(h.config.R2)
 	if err != nil {
 		log.Printf("Failed to create bucket service: %v", err)
@@ -42,14 +42,7 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageTypeTarget := bucket.ImageTypeTarget(target)
-
-	if imageTypeTarget == "" {
-		http.Error(w, "Invalid target", http.StatusBadRequest)
-		return
-	}
-
-	uploadResult, err := bucketService.UploadImage(image, imageTypeTarget, false)
+	uploadResult, err := bucketService.UploadImage(image, false)
 
 	if err != nil {
 		log.Printf("Failed to upload image: %v", err)
