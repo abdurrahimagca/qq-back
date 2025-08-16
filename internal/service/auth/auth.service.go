@@ -109,7 +109,7 @@ func CreateUserIfNotExistWithOtpService(email string, tx pgx.Tx, config *environ
 func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *environment.Config) (*pgtype.UUID, *string, error) {
 	hash := sha256.Sum256([]byte(otpCode))
 	hashedOtpCode := hex.EncodeToString(hash[:])
-	
+
 	user, err := auth.GetUserIdAndEmailByOtpCode(context.Background(), tx, hashedOtpCode)
 
 	if err != nil {
@@ -129,16 +129,16 @@ func VerifyOtpCodeService(email string, otpCode string, tx pgx.Tx, config *envir
 	return &user.ID, &user.Email, nil
 }
 
-func GenerateTokens(config *environment.Config, userID pgtype.UUID, userEmail string) (string, string, error) {
+func GenerateTokens(config *environment.Config, userID pgtype.UUID) (string, string, error) {
 	accessToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub":   uuid.UUID(userID.Bytes).String(),
-			"email": userEmail,
-			"exp":   time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Minute).Unix(),
-			"iat":   time.Now().Unix(),
-			"iss":   config.Token.Issuer,
-			"aud":   config.Token.Audience,
+			"sub": uuid.UUID(userID.Bytes).String(),
+
+			"exp": time.Now().Add(time.Duration(config.Token.AccessTokenExpireTime) * time.Minute).Unix(),
+			"iat": time.Now().Unix(),
+			"iss": config.Token.Issuer,
+			"aud": config.Token.Audience,
 		},
 	).SignedString([]byte(config.Token.Secret))
 
@@ -149,12 +149,11 @@ func GenerateTokens(config *environment.Config, userID pgtype.UUID, userEmail st
 	refreshToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub":   uuid.UUID(userID.Bytes).String(),
-			"email": userEmail,
-			"exp":   time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Minute).Unix(),
-			"iat":   time.Now().Unix(),
-			"iss":   config.Token.Issuer,
-			"aud":   config.Token.Audience,
+			"sub": uuid.UUID(userID.Bytes).String(),
+			"exp": time.Now().Add(time.Duration(config.Token.RefreshTokenExpireTime) * time.Minute).Unix(),
+			"iat": time.Now().Unix(),
+			"iss": config.Token.Issuer,
+			"aud": config.Token.Audience,
 		},
 	).SignedString([]byte(config.Token.Secret))
 
@@ -179,7 +178,7 @@ func ValidateAndGetUserFromAccessToken(tokenString string, config *environment.C
 		return nil, errors.New("invalid token")
 	}
 	claims := token.Claims.(jwt.MapClaims)
-	
+
 	// Verify issuer and audience
 	if claims["iss"] != config.Token.Issuer {
 		return nil, errors.New("invalid issuer")
@@ -187,17 +186,17 @@ func ValidateAndGetUserFromAccessToken(tokenString string, config *environment.C
 	if claims["aud"] != config.Token.Audience {
 		return nil, errors.New("invalid audience")
 	}
-	
+
 	userIdStr, ok := claims["sub"].(string)
 	if !ok || userIdStr == "" {
 		return nil, errors.New("invalid user ID in token")
 	}
-	
+
 	userId, err := uuid.Parse(userIdStr)
 	if err != nil {
 		return nil, errors.New("invalid user ID format")
 	}
-	
+
 	user, userErr := auth.GetUserByID(context.Background(), tx, pgtype.UUID{Bytes: userId, Valid: true})
 	if userErr != nil {
 		return nil, userErr
@@ -207,4 +206,46 @@ func ValidateAndGetUserFromAccessToken(tokenString string, config *environment.C
 	}
 
 	return user, nil
+}
+
+func RefreshTokenService(refreshToken string, config *environment.Config, tx pgx.Tx) (string, string, error) {
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(config.Token.Secret), nil
+	})
+
+	if err != nil {
+		return "", "", err
+	}
+	if !token.Valid {
+		return "", "", errors.New("invalid token")
+	}
+	claims := token.Claims.(jwt.MapClaims)
+
+	userIdStr, ok := claims["sub"].(string)
+	if !ok || userIdStr == "" {
+		return "", "", errors.New("invalid user ID in token")
+	}
+
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		return "", "", errors.New("invalid user ID format")
+	}
+
+	user, userErr := auth.GetUserByID(context.Background(), tx, pgtype.UUID{Bytes: userId, Valid: true})
+	if userErr != nil {
+		return "", "", userErr
+	}
+	if user == nil {
+		return "", "", errors.New("user not found")
+	}
+
+	accessToken, refreshToken, err := GenerateTokens(config, user.ID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }

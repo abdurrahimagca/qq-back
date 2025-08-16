@@ -21,7 +21,7 @@ type Querier interface {
 	InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error)
 	SearchAuthByEmail(ctx context.Context, email string) (Auth, error)
 	SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (SearchUserByAuthIDRow, error)
-	UpdateUser(ctx context.Context, arg UpdateUserParams) (pgtype.UUID, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

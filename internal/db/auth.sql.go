@@ -30,7 +30,7 @@ func (q *Queries) DeleteOtpCodeEntryByAuthID(ctx context.Context, authID pgtype.
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key_small, avatar_key_medium, avatar_key_large FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = $1) LIMIT 1
+SELECT id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = $1) LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -44,15 +44,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.DisplayName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.AvatarKeySmall,
-		&i.AvatarKeyMedium,
-		&i.AvatarKeyLarge,
+		&i.AvatarKey,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key_small, avatar_key_medium, avatar_key_large FROM users WHERE id = $1 LIMIT 1
+SELECT id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -66,9 +64,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.DisplayName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.AvatarKeySmall,
-		&i.AvatarKeyMedium,
-		&i.AvatarKeyLarge,
+		&i.AvatarKey,
 	)
 	return i, err
 }
@@ -133,18 +129,16 @@ func (q *Queries) InsertAuthOtpCode(ctx context.Context, arg InsertAuthOtpCodePa
 }
 
 const insertUser = `-- name: InsertUser :one
-INSERT INTO users (auth_id, username, display_name, avatar_key_small, avatar_key_medium, avatar_key_large)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO users (auth_id, username, display_name, avatar_key)
+VALUES ($1, $2, $3, $4)
 RETURNING id
 `
 
 type InsertUserParams struct {
-	AuthID          pgtype.UUID `json:"authId"`
-	Username        string      `json:"username"`
-	DisplayName     pgtype.Text `json:"displayName"`
-	AvatarKeySmall  pgtype.Text `json:"avatarKeySmall"`
-	AvatarKeyMedium pgtype.Text `json:"avatarKeyMedium"`
-	AvatarKeyLarge  pgtype.Text `json:"avatarKeyLarge"`
+	AuthID      pgtype.UUID `json:"authId"`
+	Username    string      `json:"username"`
+	DisplayName pgtype.Text `json:"displayName"`
+	AvatarKey   pgtype.Text `json:"avatarKey"`
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error) {
@@ -152,9 +146,7 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.
 		arg.AuthID,
 		arg.Username,
 		arg.DisplayName,
-		arg.AvatarKeySmall,
-		arg.AvatarKeyMedium,
-		arg.AvatarKeyLarge,
+		arg.AvatarKey,
 	)
 	var id pgtype.UUID
 	err := row.Scan(&id)
@@ -181,20 +173,18 @@ func (q *Queries) SearchAuthByEmail(ctx context.Context, email string) (Auth, er
 }
 
 const searchUserByAuthID = `-- name: SearchUserByAuthID :one
-SELECT id, privacy_level, auth_id, username, display_name, avatar_key_small, avatar_key_medium, avatar_key_large, created_at, updated_at FROM users WHERE auth_id = $1 LIMIT 1
+SELECT id, privacy_level, auth_id, username, display_name, avatar_key, created_at, updated_at FROM users WHERE auth_id = $1 LIMIT 1
 `
 
 type SearchUserByAuthIDRow struct {
-	ID              pgtype.UUID      `json:"id"`
-	PrivacyLevel    PrivacyLevel     `json:"privacyLevel"`
-	AuthID          pgtype.UUID      `json:"authId"`
-	Username        string           `json:"username"`
-	DisplayName     pgtype.Text      `json:"displayName"`
-	AvatarKeySmall  pgtype.Text      `json:"avatarKeySmall"`
-	AvatarKeyMedium pgtype.Text      `json:"avatarKeyMedium"`
-	AvatarKeyLarge  pgtype.Text      `json:"avatarKeyLarge"`
-	CreatedAt       pgtype.Timestamp `json:"createdAt"`
-	UpdatedAt       pgtype.Timestamp `json:"updatedAt"`
+	ID           pgtype.UUID      `json:"id"`
+	PrivacyLevel PrivacyLevel     `json:"privacyLevel"`
+	AuthID       pgtype.UUID      `json:"authId"`
+	Username     string           `json:"username"`
+	DisplayName  pgtype.Text      `json:"displayName"`
+	AvatarKey    pgtype.Text      `json:"avatarKey"`
+	CreatedAt    pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt    pgtype.Timestamp `json:"updatedAt"`
 }
 
 func (q *Queries) SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (SearchUserByAuthIDRow, error) {
@@ -206,9 +196,7 @@ func (q *Queries) SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (S
 		&i.AuthID,
 		&i.Username,
 		&i.DisplayName,
-		&i.AvatarKeySmall,
-		&i.AvatarKeyMedium,
-		&i.AvatarKeyLarge,
+		&i.AvatarKey,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -217,30 +205,37 @@ func (q *Queries) SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (S
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
-SET username = $1, display_name = $2, avatar_key_small = $3, avatar_key_medium = $4, avatar_key_large = $5
-WHERE id = $6
-RETURNING id
+SET username = $1, display_name = $2, avatar_key = $3, privacy_level = $4
+WHERE id = $5
+RETURNING id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key
 `
 
 type UpdateUserParams struct {
-	Username        pgtype.Text `json:"username"`
-	DisplayName     pgtype.Text `json:"displayName"`
-	AvatarKeySmall  pgtype.Text `json:"avatarKeySmall"`
-	AvatarKeyMedium pgtype.Text `json:"avatarKeyMedium"`
-	AvatarKeyLarge  pgtype.Text `json:"avatarKeyLarge"`
-	ID              pgtype.UUID `json:"id"`
+	Username     pgtype.Text      `json:"username"`
+	DisplayName  pgtype.Text      `json:"displayName"`
+	AvatarKey    pgtype.Text      `json:"avatarKey"`
+	PrivacyLevel NullPrivacyLevel `json:"privacyLevel"`
+	ID           pgtype.UUID      `json:"id"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (pgtype.UUID, error) {
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.Username,
 		arg.DisplayName,
-		arg.AvatarKeySmall,
-		arg.AvatarKeyMedium,
-		arg.AvatarKeyLarge,
+		arg.AvatarKey,
+		arg.PrivacyLevel,
 		arg.ID,
 	)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.PrivacyLevel,
+		&i.AuthID,
+		&i.Username,
+		&i.DisplayName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AvatarKey,
+	)
+	return i, err
 }

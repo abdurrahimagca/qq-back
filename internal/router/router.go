@@ -19,6 +19,7 @@ func Router(mux *http.ServeMux, db *pgxpool.Pool, config *environment.Config) {
 	AuthRoute(api, db, config)
 	HealthRoute(api, db, config)
 	MediaRoute(api, db, config)
+	UpdateUserRouter(api, db, config)
 
 	// Base API middleware chain for all /api/v1/* routes
 	baseMiddlewares := middleware.Chain(

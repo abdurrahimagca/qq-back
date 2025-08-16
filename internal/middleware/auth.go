@@ -7,16 +7,21 @@ import (
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/service/auth"
-	"github.com/jackc/pgx/v5"
 )
 
 type userContextKey string
 
 const UserContextKey userContextKey = "user"
 
-func UserAuth(env *environment.Config, tx pgx.Tx) Middleware {
+func UserAuth(env *environment.Config) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tx, ok := GetTxFromContext(r.Context())
+			if !ok {
+				http.Error(w, "Transaction not found in context", http.StatusInternalServerError)
+				return
+			}
+
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				w.Header().Set("Content-Type", "application/json")

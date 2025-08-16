@@ -99,7 +99,7 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(context.Background())
 
-	userID, userEmail, err := auth.VerifyOtpCodeService(req.Email, req.OtpCode, tx, h.config)
+	userID, _, err := auth.VerifyOtpCodeService(req.Email, req.OtpCode, tx, h.config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -110,7 +110,7 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, refreshToken, err := auth.GenerateTokens(h.config, *userID, *userEmail)
+	accessToken, refreshToken, err := auth.GenerateTokens(h.config, *userID)
 
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -122,6 +122,33 @@ func (h *Handler) SignInWithOtpCode(w http.ResponseWriter, r *http.Request) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		Message:      "Login successful",
+	})
+}
+
+// RefreshToken refreshes the access token using the provided refresh token.
+func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	tx, ok := middleware.GetTxFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Could not retrieve transaction from context", http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken := r.Header.Get("Authorization")
+	if refreshToken == "" {
+		http.Error(w, "Refresh token is required", http.StatusBadRequest)
+		return
+	}
+	accessToken, refreshToken, err := auth.RefreshTokenService(refreshToken, h.config, tx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(SigninResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		Message:      "Token refreshed",
 	})
 }
 

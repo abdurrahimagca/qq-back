@@ -4,8 +4,8 @@ VALUES (sqlc.arg(email), sqlc.arg(provider), sqlc.arg(provider_id))
 RETURNING id;
 
 -- name: InsertUser :one
-INSERT INTO users (auth_id, username, display_name, avatar_key_small, avatar_key_medium, avatar_key_large)
-VALUES (sqlc.arg(auth_id), sqlc.arg(username), sqlc.narg(display_name), sqlc.narg(avatar_key_small), sqlc.narg(avatar_key_medium), sqlc.narg(avatar_key_large))
+INSERT INTO users (auth_id, username, display_name, avatar_key)
+VALUES (sqlc.arg(auth_id), sqlc.arg(username), sqlc.narg(display_name), sqlc.narg(avatar_key))
 RETURNING id;
 
 -- name: InsertAuthOtpCode :one
@@ -15,12 +15,12 @@ RETURNING id;
 
 -- name: UpdateUser :one
 UPDATE users
-SET username = sqlc.narg(username), display_name = sqlc.narg(display_name), avatar_key_small = sqlc.narg(avatar_key_small), avatar_key_medium = sqlc.narg(avatar_key_medium), avatar_key_large = sqlc.narg(avatar_key_large)
+SET username = sqlc.narg(username), display_name = sqlc.narg(display_name), avatar_key = sqlc.narg(avatar_key), privacy_level = sqlc.narg(privacy_level)
 WHERE id = sqlc.arg(id)
-RETURNING id;
+RETURNING *;
 
 -- name: SearchUserByAuthID :one
-SELECT id, privacy_level, auth_id, username, display_name, avatar_key_small, avatar_key_medium, avatar_key_large, created_at, updated_at FROM users WHERE auth_id = sqlc.arg(auth_id) LIMIT 1;
+SELECT id, privacy_level, auth_id, username, display_name, avatar_key, created_at, updated_at FROM users WHERE auth_id = sqlc.arg(auth_id) LIMIT 1;
 
 -- name: SearchAuthByEmail :one
 SELECT * FROM auth WHERE email = sqlc.arg(email) LIMIT 1;

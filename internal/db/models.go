@@ -115,14 +115,12 @@ type AuthOtpCode struct {
 }
 
 type User struct {
-	ID              pgtype.UUID      `json:"id"`
-	PrivacyLevel    PrivacyLevel     `json:"privacyLevel"`
-	AuthID          pgtype.UUID      `json:"authId"`
-	Username        string           `json:"username"`
-	DisplayName     pgtype.Text      `json:"displayName"`
-	CreatedAt       pgtype.Timestamp `json:"createdAt"`
-	UpdatedAt       pgtype.Timestamp `json:"updatedAt"`
-	AvatarKeySmall  pgtype.Text      `json:"avatarKeySmall"`
-	AvatarKeyMedium pgtype.Text      `json:"avatarKeyMedium"`
-	AvatarKeyLarge  pgtype.Text      `json:"avatarKeyLarge"`
+	ID           pgtype.UUID      `json:"id"`
+	PrivacyLevel PrivacyLevel     `json:"privacyLevel"`
+	AuthID       pgtype.UUID      `json:"authId"`
+	Username     string           `json:"username"`
+	DisplayName  pgtype.Text      `json:"displayName"`
+	CreatedAt    pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt    pgtype.Timestamp `json:"updatedAt"`
+	AvatarKey    pgtype.Text      `json:"avatarKey"`
 }
