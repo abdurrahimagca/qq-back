@@ -6,8 +6,8 @@ import (
 	_ "image/gif"
 		_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"log"
-	"mime/multipart"
 	"time"
 
 	"github.com/kolesa-team/go-webp/encoder"
@@ -20,7 +20,7 @@ type ProcessedImage struct {
 	MimeType string
 }
 
-func ProcessSingleImage(file multipart.File) (*ProcessedImage, error) {
+func ProcessSingleImage(file io.Reader) (*ProcessedImage, error) {
 	start := time.Now()
 
 	// Decode image

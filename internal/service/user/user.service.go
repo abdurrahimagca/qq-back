@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"mime/multipart"
+	"io"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
@@ -19,11 +19,11 @@ type UpdateUserParams struct {
 	DisplayName  pgtype.Text
 	Username     pgtype.Text
 	PrivacyLevel db.NullPrivacyLevel
-	File         *multipart.File
+	File         io.Reader
 }
 
 func updateUserProfileAndHandleInsertNewProfilePictureService(
-	ctx context.Context, tx pgx.Tx, file multipart.File, userID pgtype.UUID, params UpdateUserParams, env environment.Config) (*db.User, error) {
+	ctx context.Context, tx pgx.Tx, file io.Reader, userID pgtype.UUID, params UpdateUserParams, env environment.Config) (*db.User, error) {
 	bucketService, errr := bucket.NewService(env.R2)
 	if errr != nil {
 		return nil, errr
@@ -61,5 +61,5 @@ func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, param
 	}
 
 	// If a file is provided, use the helper to upload and then update the profile.
-	return updateUserProfileAndHandleInsertNewProfilePictureService(ctx, tx, *params.File, userID, params, env)
+	return updateUserProfileAndHandleInsertNewProfilePictureService(ctx, tx, params.File, userID, params, env)
 }

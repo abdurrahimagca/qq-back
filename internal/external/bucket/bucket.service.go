@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
-	"mime/multipart"
 	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
@@ -51,7 +51,7 @@ func NewService(cfg environment.R2Config) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) UploadImage(file multipart.File, uploadImagePublic bool) (UploadImageResult, error) {
+func (s *Service) UploadImage(file io.Reader, uploadImagePublic bool) (UploadImageResult, error) {
 	totalStart := time.Now()
 	
 	processedImage, err := ProcessSingleImage(file)

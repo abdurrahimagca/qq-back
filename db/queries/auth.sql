@@ -15,7 +15,10 @@ RETURNING id;
 
 -- name: UpdateUser :one
 UPDATE users
-SET username = sqlc.narg(username), display_name = sqlc.narg(display_name), avatar_key = sqlc.narg(avatar_key), privacy_level = sqlc.narg(privacy_level)
+SET username = COALESCE(sqlc.narg(username), username), 
+    display_name = COALESCE(sqlc.narg(display_name), display_name), 
+    avatar_key = COALESCE(sqlc.narg(avatar_key), avatar_key), 
+    privacy_level = COALESCE(sqlc.narg(privacy_level), privacy_level)
 WHERE id = sqlc.arg(id)
 RETURNING *;
 

@@ -5,62 +5,92 @@ import (
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
+	dbModule "github.com/abdurrahimagca/qq-back/internal/db"
+	"github.com/abdurrahimagca/qq-back/internal/middleware"
 	"github.com/abdurrahimagca/qq-back/internal/service/user"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// UpdateUserHandler now accepts the connection pool and config, and manages the transaction.
+type UpdateUserProfileRequest struct {
+	DisplayName   string `json:"displayName"`
+	Username      string `json:"username"`
+	PrivacyLevel *dbModule.PrivacyLevel `json:"privacyLevel"`
+}
+
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request, db *pgxpool.Pool, config environment.Config) {
-	// Get User ID from context (set by auth middleware). Adjust the key if necessary.
-	userID, ok := r.Context().Value("userID").(pgtype.UUID)
+	// Get User from context (set by auth middleware).
+	userFromCtx, ok := r.Context().Value(middleware.UserContextKey).(*dbModule.User)
 	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+	userID := userFromCtx.ID
+
+	// Get Transaction from context (started by middleware).
+	tx, ok := middleware.GetTxFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Transaction not found in context", http.StatusInternalServerError)
+		return
+	}
+	request := UpdateUserProfileRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Could not decode JSON data", http.StatusBadRequest)
 		return
 	}
 
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		http.Error(w, "Could not parse multipart form", http.StatusBadRequest)
-		return
+	// Call the service with the transaction from the middleware.
+	params := user.UpdateUserParams{}
+	
+	if request.DisplayName != "" {
+		params.DisplayName = pgtype.Text{String: request.DisplayName, Valid: true}
 	}
-
-	file, _, err := r.FormFile("picture")
-	if err != nil && err != http.ErrMissingFile {
-		http.Error(w, "Could not get file from form", http.StatusBadRequest)
-		return
+	
+	if request.Username != "" {
+		params.Username = pgtype.Text{String: request.Username, Valid: true}
 	}
-	if file != nil {
-		defer file.Close()
+	
+	if request.PrivacyLevel != nil {
+		params.PrivacyLevel = dbModule.NullPrivacyLevel{PrivacyLevel: *request.PrivacyLevel, Valid: true}
 	}
-
-	jsonData := r.FormValue("data")
-	var request user.UpdateUserParams // Use the service-level params struct
-	if jsonData != "" {
-		if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-			http.Error(w, "Could not decode JSON data", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Begin a transaction
-	tx, err := db.Begin(r.Context())
+	
+	updatedUser, err := user.UpdateUserProfile(r.Context(), tx, userID, params, config)
 	if err != nil {
-		http.Error(w, "Could not begin transaction", http.StatusInternalServerError)
-		return
-	}
-	// Defer a rollback in case of panic or error
-	defer tx.Rollback(r.Context())
-
-	// Call the service with the transaction
-	updatedUser, err := user.UpdateUserProfile(r.Context(), tx, userID, request, config)
-	if err != nil {
+		// The middleware will rollback. We just need to set the error status.
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Commit the transaction
-	if err := tx.Commit(r.Context()); err != nil {
-		http.Error(w, "Could not commit transaction", http.StatusInternalServerError)
+	// The middleware will commit. We just need to write the response.
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updatedUser)
+}
+
+func UpdateUserProfilePicture(w http.ResponseWriter, r *http.Request, db *pgxpool.Pool, config environment.Config) {
+	// Get User from context (set by auth middleware).
+	userFromCtx, ok := r.Context().Value(middleware.UserContextKey).(*dbModule.User)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+	userID := userFromCtx.ID
+
+	tx, ok := middleware.GetTxFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Transaction not found in context", http.StatusInternalServerError)
+		return
+	}
+
+	// Read file directly from request body
+	file := r.Body
+	defer file.Close()
+
+	updatedUser, err := user.UpdateUserProfile(r.Context(), tx, userID, user.UpdateUserParams{
+		File: file,
+	}, config)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

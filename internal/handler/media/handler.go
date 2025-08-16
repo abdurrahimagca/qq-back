@@ -28,11 +28,8 @@ func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	image, _, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, "Invalid image", http.StatusBadRequest)
-		return
-	}
+	// Read image directly from request body
+	image := r.Body
 	defer image.Close()
 
 	bucketService, err := bucket.NewService(h.config.R2)

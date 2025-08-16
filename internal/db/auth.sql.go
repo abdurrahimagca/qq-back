@@ -205,7 +205,10 @@ func (q *Queries) SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (S
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
-SET username = $1, display_name = $2, avatar_key = $3, privacy_level = $4
+SET username = COALESCE($1, username), 
+    display_name = COALESCE($2, display_name), 
+    avatar_key = COALESCE($3, avatar_key), 
+    privacy_level = COALESCE($4, privacy_level)
 WHERE id = $5
 RETURNING id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key
 `

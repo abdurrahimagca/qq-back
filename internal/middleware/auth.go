@@ -54,9 +54,7 @@ func UserAuth(env *environment.Config) Middleware {
 			}
 
 			ctx := context.WithValue(r.Context(), UserContextKey, user)
-			r = r.WithContext(ctx)
-
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

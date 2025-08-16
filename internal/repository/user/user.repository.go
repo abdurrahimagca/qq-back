@@ -36,7 +36,7 @@ func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, param
 	if params.PrivacyLevel.Valid {
 		newData.PrivacyLevel = db.NullPrivacyLevel{PrivacyLevel: params.PrivacyLevel.PrivacyLevel, Valid: true}
 	}
-	if !params.DisplayName.Valid && !params.AvatarKey.Valid {
+	if !params.DisplayName.Valid && !params.AvatarKey.Valid && !params.Username.Valid && !params.PrivacyLevel.Valid {
 		return nil, errors.New("no data to update")
 	}
 

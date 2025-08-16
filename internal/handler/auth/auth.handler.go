@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
+	"strings"	
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/abdurrahimagca/qq-back/internal/middleware"
@@ -138,7 +138,8 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Refresh token is required", http.StatusBadRequest)
 		return
 	}
-	accessToken, refreshToken, err := auth.RefreshTokenService(refreshToken, h.config, tx)
+	rtk := strings.TrimPrefix(refreshToken, "Bearer ")
+	accessToken, refreshToken, err := auth.RefreshTokenService(rtk, h.config, tx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
