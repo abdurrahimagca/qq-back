@@ -6,7 +6,18 @@ import (
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type AuthRepository struct {
+	db *pgxpool.Pool
+}
+
+func NewAuthRepository(db *pgxpool.Pool) *AuthRepository {
+	return &AuthRepository{
+		db: db,
+	}
+}
 
 type CreateFirstTimeUserParams struct {
 	Email      string
@@ -22,7 +33,7 @@ type CreateFirstTimeUserWithOtpResult struct {
 	OtpCodeID *pgtype.UUID
 }
 
-func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFirstTimeUserParams) (CreateFirstTimeUserWithOtpResult, error) {
+func (r *AuthRepository) CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFirstTimeUserParams) (CreateFirstTimeUserWithOtpResult, error) {
 	queries := db.New(tx)
 
 	authId, err := queries.InsertAuth(ctx, db.InsertAuthParams{
@@ -56,7 +67,7 @@ func CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFir
 	}, nil
 }
 
-func GetUserIdAndEmailByOtpCode(ctx context.Context, tx pgx.Tx, code string) (*db.GetUserIdAndEmailByOtpCodeRow, error) {
+func (r *AuthRepository) GetUserIdAndEmailByOtpCode(ctx context.Context, tx pgx.Tx, code string) (*db.GetUserIdAndEmailByOtpCodeRow, error) {
 	queries := db.New(tx)
 
 	user, err := queries.GetUserIdAndEmailByOtpCode(ctx, code)
@@ -68,7 +79,7 @@ func GetUserIdAndEmailByOtpCode(ctx context.Context, tx pgx.Tx, code string) (*d
 	return &user, nil
 }
 
-func GetUserByEmail(ctx context.Context, tx pgx.Tx, email string) (*db.User, error) {
+func (r *AuthRepository) GetUserByEmail(ctx context.Context, tx pgx.Tx, email string) (*db.User, error) {
 	queries := db.New(tx)
 
 	user, err := queries.GetUserByEmail(ctx, email)
@@ -80,7 +91,7 @@ func GetUserByEmail(ctx context.Context, tx pgx.Tx, email string) (*db.User, err
 	return &user, nil
 }
 
-func InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, code string) error {
+func (r *AuthRepository) InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, code string) error {
 	queries := db.New(tx)
 
 	// Get the user to find their auth_id
@@ -101,7 +112,7 @@ func InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx, userID pgtype.UUID,
 	return nil
 }
 
-func DeleteOtpCodeById(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
+func (r *AuthRepository) DeleteOtpCodeById(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
 	queries := db.New(tx)
 
 	err := queries.DeleteOtpCodeById(ctx, id)
@@ -113,7 +124,7 @@ func DeleteOtpCodeById(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
 	return nil
 }
 
-func DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.Tx, authID pgtype.UUID) error {
+func (r *AuthRepository) DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.Tx, authID pgtype.UUID) error {
 	queries := db.New(tx)
 
 	err := queries.DeleteOtpCodeEntryByAuthID(ctx, authID)
@@ -125,7 +136,7 @@ func DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.Tx, authID pgtype.UU
 	return nil
 }
 
-func GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, error) {
+func (r *AuthRepository) GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, error) {
 	queries := db.New(tx)
 
 	user, err := queries.GetUserByID(ctx, userID)
