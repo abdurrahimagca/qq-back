@@ -1,0 +1,360 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "QQ Backend API",
+    "version": "0.0.1",
+    "description": "QQ Backend API"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3003/api/v1.1",
+      "description": "Local Development Server v1.1"
+    }
+  ],
+  "paths": {
+    "/auth/otp": {
+      "post": {
+        "summary": "Send OTP code to email for existing users or create new user account",
+        "description": "Send OTP code to email for existing users or create new user account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of the user",
+                    "example": "test@example.com"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "example": {
+                  "email": "test@example.com"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP code sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "description": "Success status of the API call"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message from the API call"
+                        },
+                        "data": {
+                          "type": "object",
+                          "description": "Data returned by the API call"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "description": "Timestamp of the response",
+                          "example": "2021-01-01T00:00:00Z"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "isNewUser": {
+                              "type": "boolean",
+                              "description": "Indicates if this is a new user registration",
+                              "example": true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "summary": "Bad request - Invalid email or validation error",
+            "description": "Bad request - Invalid email or validation error, usually due to email is not a valid email address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Success status of the API call"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message from the API call"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "Timestamp of the response",
+                      "example": "2021-01-01T00:00:00Z"
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Error object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Error message"
+                        },
+                        "trace": {
+                          "type": "string",
+                          "description": "Error stack trace for debugging"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Success status of the API call"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message from the API call"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "Timestamp of the response",
+                      "example": "2021-01-01T00:00:00Z"
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Error object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Error message"
+                        },
+                        "trace": {
+                          "type": "string",
+                          "description": "Error stack trace for debugging"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/otp-verify": {
+      "post": {
+        "summary": "Verify OTP code",
+        "description": "Verify OTP code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of the user",
+                    "example": "test@example.com"
+                  },
+                  "otpCode": {
+                    "type": "string",
+                    "description": "OTP code received via email",
+                    "example": "123456"
+                  }
+                },
+                "required": [
+                  "email",
+                  "otpCode"
+                ],
+                "example": {
+                  "email": "test@example.com",
+                  "otpCode": "123456"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP code verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "description": "Success status of the API call"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message from the API call"
+                        },
+                        "data": {
+                          "type": "object",
+                          "description": "Data returned by the API call"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "description": "Timestamp of the response",
+                          "example": "2021-01-01T00:00:00Z"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "accessToken": {
+                              "type": "string",
+                              "description": "Access token for the user",
+                              "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                            },
+                            "refreshToken": {
+                              "type": "string",
+                              "description": "Refresh token for the user",
+                              "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "summary": "Bad request - Invalid email or validation error or invalid OTP code",
+            "description": "Bad request - Invalid email or validation error or invalid OTP code, usually due to email is not a valid email address or OTP code is not a valid OTP code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Success status of the API call"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message from the API call"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "Timestamp of the response",
+                      "example": "2021-01-01T00:00:00Z"
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Error object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Error message"
+                        },
+                        "trace": {
+                          "type": "string",
+                          "description": "Error stack trace for debugging"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Success status of the API call"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message from the API call"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "Timestamp of the response",
+                      "example": "2021-01-01T00:00:00Z"
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Error object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Error message"
+                        },
+                        "trace": {
+                          "type": "string",
+                          "description": "Error stack trace for debugging"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

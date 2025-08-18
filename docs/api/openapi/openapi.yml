@@ -1,15 +1,14 @@
 openapi: 3.0.0
 info:
-  title: "QQ Backend API"
-  version: "0.0.1"
-  description: "QQ Backend API"
+  title: 'QQ Backend API'
+  version: '0.0.1'
+  description: 'QQ Backend API'
 servers:
-  - url: "http://localhost:3003/api/v1.1"
-    description: "Local Development Server v1.1"
+  - url: 'http://localhost:3003/api/v1.1'
+    description: 'Local Development Server v1.1'
 
 paths:
   /auth/otp:
     $ref: './paths/auth.yml#/otp'
   /auth/otp-verify:
     $ref: './paths/auth.yml#/otp-verify'
- 
