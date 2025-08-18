@@ -69,9 +69,7 @@ sqlc-generate:
 	cd docker && docker compose exec api sqlc generate
 
 generate-api:
-	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config docs/api/codegen-types.yaml docs/api/openapi/openapi.yml
-	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config docs/api/codegen-server.yaml docs/api/openapi/openapi.yml
-	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config docs/api/codegen-client.yaml docs/api/openapi/openapi.yml
+	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config docs/api/codegen.yaml  docs/api/openapi/openapi.yml
 
 # Formatting via Docker
 fmt:

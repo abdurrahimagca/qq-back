@@ -6,14 +6,6 @@ info:
 servers:
   - url: "http://localhost:3003/api/v1.1"
     description: "Local Development Server v1.1"
-components:
-  schemas:
-    $ref: './components/common.yml'
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
 
 paths:
   /auth/otp:

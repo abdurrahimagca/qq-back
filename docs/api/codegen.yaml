@@ -1,0 +1,7 @@
+package: api
+output: internal/api/api.go
+generate:
+  - types
+  - std-http-server
+  - strict-server
+  - client
