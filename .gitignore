@@ -50,3 +50,5 @@ logs/
 # Air live reload temp files
 tmp/
 
+
+openapi.json

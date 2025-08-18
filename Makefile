@@ -69,8 +69,8 @@ sqlc-generate:
 	cd docker && docker compose exec api sqlc generate
 
 generate-api:
-	swagger-cli bundle --dereference docs/api/openapi/openapi.yml -o docs/api/bundled.json
-	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config docs/api/codegen.yaml docs/api/bundled.json
+	swagger-cli bundle --dereference docs/api/openapi/openapi.yml -o openapi.json
+	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config codegen.yaml openapi.json
 
 # Formatting via Docker
 fmt:
