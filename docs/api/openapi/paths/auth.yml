@@ -1,0 +1,109 @@
+otp:
+  post:
+    summary: Send OTP code to email for existing users or create new user account
+    description: Send OTP code to email for existing users or create new user account
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                description: Email address of the user
+                example: 'test@example.com'
+            required:
+              - email
+            example:
+              email: 'test@example.com'
+    responses:
+      '200':
+        description: OTP code sent successfully
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        isNewUser:
+                          type: boolean
+                          description: Indicates if this is a new user registration
+                          example: true
+      '400':
+        summary: Bad request - Invalid email or validation error
+        description: Bad request - Invalid email or validation error, usually due to email is not a valid email address
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/ErrorResponse'
+
+otp-verify:
+  post:
+    summary: Verify OTP code
+    description: Verify OTP code
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                description: Email address of the user
+                example: 'test@example.com'
+              otpCode:
+                type: string
+                description: OTP code received via email
+                example: '123456'
+            required:
+              - email
+              - otpCode
+            example:
+              email: 'test@example.com'
+              otpCode: '123456'
+    responses:
+      '200':
+        description: OTP code verified successfully
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/SuccessResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        accessToken:
+                          type: string
+                          description: Access token for the user
+                          example: '123456'
+                        refreshToken:
+                          type: string
+                          description: Refresh token for the user
+                          example: '123456'
+      '400':
+        summary: Bad request - Invalid email or validation error or invalid OTP code
+        description: Bad request - Invalid email or validation error or invalid OTP code, usually due to email is not a valid email address or OTP code is not a valid OTP code
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/ErrorResponse'
