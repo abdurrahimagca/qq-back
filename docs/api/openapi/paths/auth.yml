@@ -24,7 +24,7 @@ otp:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/common.yml#/SuccessResponse'
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
                 - type: object
                   properties:
                     data:
@@ -40,13 +40,13 @@ otp:
         content:
           application/json:
             schema:
-              $ref: '../components/common.yml#/ErrorResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
           application/json:
             schema:
-              $ref: '../components/common.yml#/ErrorResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 
 otp-verify:
   post:
@@ -80,7 +80,7 @@ otp-verify:
           application/json:
             schema:
               allOf:
-                - $ref: '../components/common.yml#/SuccessResponse'
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
                 - type: object
                   properties:
                     data:
@@ -89,21 +89,21 @@ otp-verify:
                         accessToken:
                           type: string
                           description: Access token for the user
-                          example: '123456'
+                          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
                         refreshToken:
                           type: string
                           description: Refresh token for the user
-                          example: '123456'
+                          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
       '400':
         summary: Bad request - Invalid email or validation error or invalid OTP code
         description: Bad request - Invalid email or validation error or invalid OTP code, usually due to email is not a valid email address or OTP code is not a valid OTP code
         content:
           application/json:
             schema:
-              $ref: '../components/common.yml#/ErrorResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
           application/json:
             schema:
-              $ref: '../components/common.yml#/ErrorResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'

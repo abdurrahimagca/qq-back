@@ -16,7 +16,6 @@ require (
 	github.com/kolesa-team/go-webp v1.0.5
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0
-	github.com/oapi-codegen/runtime v1.1.2
 	github.com/resend/resend-go/v2 v2.21.0
 )
 

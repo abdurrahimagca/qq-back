@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
-	"github.com/abdurrahimagca/qq-back/internal/router"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -23,7 +22,6 @@ func main() {
 		log.Fatal("Error creating pool", err)
 	}
 	defer pool.Close()
-	router.Router(mux, pool, config)
 
 	log.Println("Server is running on port 3003")
 	log.Fatal(http.ListenAndServe(":3003", mux))

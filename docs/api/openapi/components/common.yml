@@ -1,43 +1,45 @@
-SuccessResponse:
-  type: object
-  properties:
-    success:
-      type: boolean
-      description: Success status of the API call
-    message:
-      type: string
-      description: Message from the API call
-    data:
+components:
+  schemas:
+    SuccessResponse:
       type: object
-      description: Data returned by the API call
-    timestamp:
-      type: string
-      description: Timestamp of the response
-      example: '2021-01-01T00:00:00Z'
-
-ErrorResponse:
-  type: object
-  properties:
-    success:
-      type: boolean
-      description: Success status of the API call
-    message:
-      type: string
-      description: Message from the API call
-    timestamp:
-      type: string
-      description: Timestamp of the response
-      example: '2021-01-01T00:00:00Z'
-    error:
-      type: object
-      description: Error object
       properties:
-        code:
-          type: string
-          description: Error code
+        success:
+          type: boolean
+          description: Success status of the API call
         message:
           type: string
-          description: Error message
-        trace:
+          description: Message from the API call
+        data:
+          type: object
+          description: Data returned by the API call
+        timestamp:
           type: string
-          description: Error stack trace for debugging
+          description: Timestamp of the response
+          example: '2021-01-01T00:00:00Z'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Success status of the API call
+        message:
+          type: string
+          description: Message from the API call
+        timestamp:
+          type: string
+          description: Timestamp of the response
+          example: '2021-01-01T00:00:00Z'
+        error:
+          type: object
+          description: Error object
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Error message
+            trace:
+              type: string
+              description: Error stack trace for debugging
