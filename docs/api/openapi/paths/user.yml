@@ -1,4 +1,6 @@
 profile:
+  tags:
+    - User
   get:
     summary: Get user information
     description: Get user information
@@ -27,6 +29,8 @@ profile:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 profile_update:
   post:
+    tags:
+      - User
     summary: Update user information
     description: Update user information
     security:
@@ -64,13 +68,15 @@ profile_update:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 profile_update_avatar:
   put:
+    tags:
+      - User
     summary: Update avatar
     description: Update avatar
     security:
       - BearerAuth: []
     requestBody:
       content:
-        rawdata:
+        application/octet-stream:
           schema:
             type: string
             format: binary
