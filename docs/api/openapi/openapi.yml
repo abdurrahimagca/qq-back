@@ -24,3 +24,7 @@ paths:
     $ref: './paths/auth.yml#/refresh-token'
   /user/profile:
     $ref: './paths/user.yml#/profile'
+  /user/profile/update:
+    $ref: './paths/user.yml#/profile_update'
+  /user/profile/update-avatar:
+    $ref: './paths/user.yml#/profile_update_avatar'

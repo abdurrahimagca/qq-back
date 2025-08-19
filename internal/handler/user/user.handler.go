@@ -24,12 +24,12 @@ func (h *UserHandler) GetUserProfile(ctx context.Context, request api.GetUserPro
 	return api.GetUserProfile200JSONResponse{}, nil
 }
 
-func (h *UserHandler) PostProfileUpdate(ctx context.Context, request api.PostProfileUpdateRequestObject) (api.PostProfileUpdateResponseObject, error) {
+func (h *UserHandler) PostUserProfileUpdate(ctx context.Context, request api.PostUserProfileUpdateRequestObject) (api.PostUserProfileUpdateResponseObject, error) {
 	// Implementation for PostProfileUpdate
-	return api.PostProfileUpdate200JSONResponse{}, nil
+	return api.PostUserProfileUpdate200JSONResponse{}, nil
 }
 
-func (h *UserHandler) PutProfileUpdateAvatar(ctx context.Context, request api.PutProfileUpdateAvatarRequestObject) (api.PutProfileUpdateAvatarResponseObject, error) {
+func (h *UserHandler) PutUserProfileUpdateAvatar(ctx context.Context, request api.PutUserProfileUpdateAvatarRequestObject) (api.PutUserProfileUpdateAvatarResponseObject, error) {
 	// Implementation for PutProfileUpdateAvatar
-	return api.PutProfileUpdateAvatar200JSONResponse{}, nil
+	return api.PutUserProfileUpdateAvatar200JSONResponse{}, nil
 }
