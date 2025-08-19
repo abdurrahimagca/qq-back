@@ -136,8 +136,8 @@ func (r *AuthRepository) DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.
 	return nil
 }
 
-func (r *AuthRepository) GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, error) {
-	queries := db.New(tx)
+func (r *AuthRepository) GetUserByID(ctx context.Context, dbtx db.DBTX, userID pgtype.UUID) (*db.User, error) {
+	queries := db.New(dbtx)
 
 	user, err := queries.GetUserByID(ctx, userID)
 	if err != nil {

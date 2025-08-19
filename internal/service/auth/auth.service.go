@@ -14,7 +14,6 @@ import (
 	"github.com/abdurrahimagca/qq-back/internal/repository/auth"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -234,7 +233,7 @@ func (s *AuthService) GenerateTokens(userID pgtype.UUID) (string, string, error)
 
 	return accessToken, refreshToken, nil
 }
-func (s *AuthService) ValidateAndGetUserFromAccessToken(tokenString string, tx pgx.Tx) (user *db.User, err error) {
+func (s *AuthService) ValidateAndGetUserFromAccessToken(tokenString string) (user *db.User, err error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -268,7 +267,7 @@ func (s *AuthService) ValidateAndGetUserFromAccessToken(tokenString string, tx p
 		return nil, errors.New("invalid user ID format")
 	}
 
-	user, userErr := s.authRepo.GetUserByID(context.Background(), tx, pgtype.UUID{Bytes: userId, Valid: true})
+	user, userErr := s.authRepo.GetUserByID(context.Background(), s.db, pgtype.UUID{Bytes: userId, Valid: true})
 	if userErr != nil {
 		return nil, userErr
 	}
@@ -279,7 +278,7 @@ func (s *AuthService) ValidateAndGetUserFromAccessToken(tokenString string, tx p
 	return user, nil
 }
 
-func (s *AuthService) RefreshTokenService(refreshToken string, tx pgx.Tx) (string, string, error) {
+func (s *AuthService) RefreshTokenService(refreshToken string) (string, string, error) {
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -305,7 +304,7 @@ func (s *AuthService) RefreshTokenService(refreshToken string, tx pgx.Tx) (strin
 		return "", "", errors.New("invalid user ID format")
 	}
 
-	user, userErr := s.authRepo.GetUserByID(context.Background(), tx, pgtype.UUID{Bytes: userId, Valid: true})
+	user, userErr := s.authRepo.GetUserByID(context.Background(), s.db, pgtype.UUID{Bytes: userId, Valid: true})
 	if userErr != nil {
 		return "", "", userErr
 	}

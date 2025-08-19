@@ -7,14 +7,25 @@ import (
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/abdurrahimagca/qq-back/internal/external/bucket"
-	"github.com/abdurrahimagca/qq-back/internal/repository/user"
-	"github.com/jackc/pgx/v5"
+	userRepository "github.com/abdurrahimagca/qq-back/internal/repository/user"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// UpdateUserParams defines the set of parameters that can be updated by a user
-// through the service layer. It intentionally omits fields like AvatarKey
-// which should not be set directly by the client.
+type UserService struct {
+	db       *pgxpool.Pool
+	config   *environment.Config
+	userRepo *userRepository.UserRepository
+}
+
+func NewUserService(db *pgxpool.Pool, config *environment.Config) *UserService {
+	return &UserService{
+		db:       db,
+		config:   config,
+		userRepo: userRepository.NewUserRepository(db),
+	}
+}
+
 type UpdateUserParams struct {
 	DisplayName  pgtype.Text
 	Username     pgtype.Text
@@ -22,44 +33,59 @@ type UpdateUserParams struct {
 	File         io.Reader
 }
 
-func updateUserProfileAndHandleInsertNewProfilePictureService(
-	ctx context.Context, tx pgx.Tx, file io.Reader, userID pgtype.UUID, params UpdateUserParams, env environment.Config) (*db.User, error) {
-	bucketService, errr := bucket.NewService(env.R2)
-	if errr != nil {
-		return nil, errr
+func (s *UserService) GetUserProfile(ctx context.Context, userID pgtype.UUID) (*db.User, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
 	}
-	uploadImageResult, err := bucketService.UploadImage(file, false)
+	defer tx.Rollback(ctx)
+
+	user, err := s.userRepo.GetUserByID(ctx, tx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Map from service-level params to db-level params, adding the new avatar key.
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *UserService) UpdateUserProfile(ctx context.Context, userID pgtype.UUID, params UpdateUserParams) (*db.User, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
 	dbParams := db.UpdateUserParams{
-		AvatarKey:    pgtype.Text{String: *uploadImageResult.Key, Valid: true},
+		ID:           userID,
 		DisplayName:  params.DisplayName,
 		Username:     params.Username,
 		PrivacyLevel: params.PrivacyLevel,
 	}
 
-	user, err := user.UpdateUserProfile(ctx, tx, userID, dbParams)
+	if params.File != nil {
+		bucketService, err := bucket.NewService(s.config.R2)
+		if err != nil {
+			return nil, err
+		}
+		uploadImageResult, err := bucketService.UploadImage(params.File, false)
+		if err != nil {
+			return nil, err
+		}
+		dbParams.AvatarKey = pgtype.Text{String: *uploadImageResult.Key, Valid: true}
+	}
+
+	user, err := s.userRepo.UpdateUserProfile(ctx, tx, dbParams)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
-}
 
-// UpdateUserProfile handles the business logic for updating a user's profile.
-func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, params UpdateUserParams, env environment.Config) (*db.User, error) {
-	if params.File == nil {
-		// If no file, map service params to DB params and update.
-		dbParams := db.UpdateUserParams{
-			DisplayName:  params.DisplayName,
-			Username:     params.Username,
-			PrivacyLevel: params.PrivacyLevel,
-		}
-		return user.UpdateUserProfile(ctx, tx, userID, dbParams)
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
 	}
 
-	// If a file is provided, use the helper to upload and then update the profile.
-	return updateUserProfileAndHandleInsertNewProfilePictureService(ctx, tx, params.File, userID, params, env)
+	return user, nil
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/abdurrahimagca/qq-back/internal/api"
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
-	authHandler "github.com/abdurrahimagca/qq-back/internal/handler/auth"
+	"github.com/abdurrahimagca/qq-back/internal/handler"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -28,11 +28,11 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Initialize auth handler - this satisfies the StrictServerInterface
-	authH := authHandler.NewAuthHandler(pool, config)
+	// Initialize the API handler which embeds all other handlers
+	apiHandler := handler.NewApiHandler(pool, config)
 
 	// Create a strict handler that ENFORCES type safety!
-	strictHandler := api.NewStrictHandler(authH, nil)
+	strictHandler := api.NewStrictHandler(apiHandler, nil)
 
 	// Create a new ServeMux
 	mux := http.NewServeMux()

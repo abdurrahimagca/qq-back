@@ -16,8 +16,6 @@ type AuthHandler struct {
 	authService *authService.AuthService
 }
 
-var _ api.StrictServerInterface = (*AuthHandler)(nil)
-
 func NewAuthHandler(db *pgxpool.Pool, config *environment.Config) *AuthHandler {
 	return &AuthHandler{
 		authService: authService.NewAuthService(db, config),
@@ -124,4 +122,24 @@ func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAut
 		Message:   "OTP verified successfully",
 	}, nil
 }
+func (h *AuthHandler) PostAuthRefreshToken(ctx context.Context, request api.PostAuthRefreshTokenRequestObject) (api.PostAuthRefreshTokenResponseObject, error) {
+	timestamp := time.Now().Format(time.RFC3339)
 
+	accessToken, refreshToken, err := h.authService.RefreshTokenService(request.Body.RefreshToken)
+	message := "Tokens refreshed successfully"
+	if err != nil {
+		message = "Invalid refresh token"
+		return api.PostAuthRefreshToken401JSONResponse{
+			Message:   &message,
+			Timestamp: &timestamp,
+		}, nil
+	}
+
+	return api.PostAuthRefreshToken200JSONResponse{
+		Success:      true,
+		Timestamp:    timestamp,
+		Message:      message,
+		RefreshToken: &refreshToken,
+		AccessToken:  &accessToken,
+	}, nil
+}

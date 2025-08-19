@@ -3,12 +3,22 @@ package user
 import (
 	"context"
 	"errors"
+
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, error) {
+type UserRepository struct {
+	db *pgxpool.Pool
+}
+
+func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+	return &UserRepository{db: db}
+}
+
+func (r *UserRepository) GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, error) {
 	queries := db.New(tx)
 
 	user, err := queries.GetUserByID(ctx, userID)
@@ -19,9 +29,7 @@ func GetUserByID(ctx context.Context, tx pgx.Tx, userID pgtype.UUID) (*db.User, 
 	return &user, nil
 }
 
-
-
-func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, params db.UpdateUserParams) (*db.User, error) {
+func (r *UserRepository) UpdateUserProfile(ctx context.Context, tx pgx.Tx, params db.UpdateUserParams) (*db.User, error) {
 	queries := db.New(tx)
 	newData := db.UpdateUserParams{}
 	if params.DisplayName.Valid {
@@ -41,10 +49,10 @@ func UpdateUserProfile(ctx context.Context, tx pgx.Tx, userID pgtype.UUID, param
 	}
 
 	user, err := queries.UpdateUser(ctx, db.UpdateUserParams{
-		ID:          userID,
-		DisplayName: newData.DisplayName,
-		AvatarKey:   newData.AvatarKey,
-		Username:    newData.Username,
+		ID:           params.ID,
+		DisplayName:  newData.DisplayName,
+		AvatarKey:    newData.AvatarKey,
+		Username:     newData.Username,
 		PrivacyLevel: newData.PrivacyLevel,
 	})
 
