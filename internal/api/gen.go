@@ -315,57 +315,57 @@ type PostAuthOtpResponse struct {
 		} `json:"data,omitempty"`
 
 		// Message Message from the API call
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Success Success status of the API call
-		Success *bool `json:"success,omitempty"`
+		Success bool `json:"success"`
 
 		// Timestamp Timestamp of the response
-		Timestamp *string `json:"timestamp,omitempty"`
+		Timestamp string `json:"timestamp"`
 	}
 	JSON400 *struct {
 		// Error Error object
-		Error *struct {
+		Error struct {
 			// Code Error code
-			Code *string `json:"code,omitempty"`
+			Code string `json:"code"`
 
 			// Message Error message
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Trace Error stack trace for debugging
 			Trace *string `json:"trace,omitempty"`
-		} `json:"error,omitempty"`
+		} `json:"error"`
 
 		// Message Message from the API call
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Success Success status of the API call
-		Success *bool `json:"success,omitempty"`
+		Success bool `json:"success"`
 
 		// Timestamp Timestamp of the response
-		Timestamp *string `json:"timestamp,omitempty"`
+		Timestamp string `json:"timestamp"`
 	}
 	JSON500 *struct {
 		// Error Error object
-		Error *struct {
+		Error struct {
 			// Code Error code
-			Code *string `json:"code,omitempty"`
+			Code string `json:"code"`
 
 			// Message Error message
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Trace Error stack trace for debugging
 			Trace *string `json:"trace,omitempty"`
-		} `json:"error,omitempty"`
+		} `json:"error"`
 
 		// Message Message from the API call
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Success Success status of the API call
-		Success *bool `json:"success,omitempty"`
+		Success bool `json:"success"`
 
 		// Timestamp Timestamp of the response
-		Timestamp *string `json:"timestamp,omitempty"`
+		Timestamp string `json:"timestamp"`
 	}
 }
 
@@ -398,57 +398,57 @@ type PostAuthOtpVerifyResponse struct {
 		} `json:"data,omitempty"`
 
 		// Message Message from the API call
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Success Success status of the API call
-		Success *bool `json:"success,omitempty"`
+		Success bool `json:"success"`
 
 		// Timestamp Timestamp of the response
-		Timestamp *string `json:"timestamp,omitempty"`
+		Timestamp string `json:"timestamp"`
 	}
 	JSON400 *struct {
 		// Error Error object
-		Error *struct {
+		Error struct {
 			// Code Error code
-			Code *string `json:"code,omitempty"`
+			Code string `json:"code"`
 
 			// Message Error message
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Trace Error stack trace for debugging
 			Trace *string `json:"trace,omitempty"`
-		} `json:"error,omitempty"`
+		} `json:"error"`
 
 		// Message Message from the API call
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Success Success status of the API call
-		Success *bool `json:"success,omitempty"`
+		Success bool `json:"success"`
 
 		// Timestamp Timestamp of the response
-		Timestamp *string `json:"timestamp,omitempty"`
+		Timestamp string `json:"timestamp"`
 	}
 	JSON500 *struct {
 		// Error Error object
-		Error *struct {
+		Error struct {
 			// Code Error code
-			Code *string `json:"code,omitempty"`
+			Code string `json:"code"`
 
 			// Message Error message
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Trace Error stack trace for debugging
 			Trace *string `json:"trace,omitempty"`
-		} `json:"error,omitempty"`
+		} `json:"error"`
 
 		// Message Message from the API call
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Success Success status of the API call
-		Success *bool `json:"success,omitempty"`
+		Success bool `json:"success"`
 
 		// Timestamp Timestamp of the response
-		Timestamp *string `json:"timestamp,omitempty"`
+		Timestamp string `json:"timestamp"`
 	}
 }
 
@@ -524,13 +524,13 @@ func ParsePostAuthOtpResponse(rsp *http.Response) (*PostAuthOtpResponse, error) 
 			} `json:"data,omitempty"`
 
 			// Message Message from the API call
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Success Success status of the API call
-			Success *bool `json:"success,omitempty"`
+			Success bool `json:"success"`
 
 			// Timestamp Timestamp of the response
-			Timestamp *string `json:"timestamp,omitempty"`
+			Timestamp string `json:"timestamp"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -540,25 +540,25 @@ func ParsePostAuthOtpResponse(rsp *http.Response) (*PostAuthOtpResponse, error) 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
 			// Error Error object
-			Error *struct {
+			Error struct {
 				// Code Error code
-				Code *string `json:"code,omitempty"`
+				Code string `json:"code"`
 
 				// Message Error message
-				Message *string `json:"message,omitempty"`
+				Message string `json:"message"`
 
 				// Trace Error stack trace for debugging
 				Trace *string `json:"trace,omitempty"`
-			} `json:"error,omitempty"`
+			} `json:"error"`
 
 			// Message Message from the API call
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Success Success status of the API call
-			Success *bool `json:"success,omitempty"`
+			Success bool `json:"success"`
 
 			// Timestamp Timestamp of the response
-			Timestamp *string `json:"timestamp,omitempty"`
+			Timestamp string `json:"timestamp"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -568,25 +568,25 @@ func ParsePostAuthOtpResponse(rsp *http.Response) (*PostAuthOtpResponse, error) 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
 			// Error Error object
-			Error *struct {
+			Error struct {
 				// Code Error code
-				Code *string `json:"code,omitempty"`
+				Code string `json:"code"`
 
 				// Message Error message
-				Message *string `json:"message,omitempty"`
+				Message string `json:"message"`
 
 				// Trace Error stack trace for debugging
 				Trace *string `json:"trace,omitempty"`
-			} `json:"error,omitempty"`
+			} `json:"error"`
 
 			// Message Message from the API call
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Success Success status of the API call
-			Success *bool `json:"success,omitempty"`
+			Success bool `json:"success"`
 
 			// Timestamp Timestamp of the response
-			Timestamp *string `json:"timestamp,omitempty"`
+			Timestamp string `json:"timestamp"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -623,13 +623,13 @@ func ParsePostAuthOtpVerifyResponse(rsp *http.Response) (*PostAuthOtpVerifyRespo
 			} `json:"data,omitempty"`
 
 			// Message Message from the API call
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Success Success status of the API call
-			Success *bool `json:"success,omitempty"`
+			Success bool `json:"success"`
 
 			// Timestamp Timestamp of the response
-			Timestamp *string `json:"timestamp,omitempty"`
+			Timestamp string `json:"timestamp"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -639,25 +639,25 @@ func ParsePostAuthOtpVerifyResponse(rsp *http.Response) (*PostAuthOtpVerifyRespo
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
 			// Error Error object
-			Error *struct {
+			Error struct {
 				// Code Error code
-				Code *string `json:"code,omitempty"`
+				Code string `json:"code"`
 
 				// Message Error message
-				Message *string `json:"message,omitempty"`
+				Message string `json:"message"`
 
 				// Trace Error stack trace for debugging
 				Trace *string `json:"trace,omitempty"`
-			} `json:"error,omitempty"`
+			} `json:"error"`
 
 			// Message Message from the API call
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Success Success status of the API call
-			Success *bool `json:"success,omitempty"`
+			Success bool `json:"success"`
 
 			// Timestamp Timestamp of the response
-			Timestamp *string `json:"timestamp,omitempty"`
+			Timestamp string `json:"timestamp"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -667,25 +667,25 @@ func ParsePostAuthOtpVerifyResponse(rsp *http.Response) (*PostAuthOtpVerifyRespo
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
 			// Error Error object
-			Error *struct {
+			Error struct {
 				// Code Error code
-				Code *string `json:"code,omitempty"`
+				Code string `json:"code"`
 
 				// Message Error message
-				Message *string `json:"message,omitempty"`
+				Message string `json:"message"`
 
 				// Trace Error stack trace for debugging
 				Trace *string `json:"trace,omitempty"`
-			} `json:"error,omitempty"`
+			} `json:"error"`
 
 			// Message Message from the API call
-			Message *string `json:"message,omitempty"`
+			Message string `json:"message"`
 
 			// Success Success status of the API call
-			Success *bool `json:"success,omitempty"`
+			Success bool `json:"success"`
 
 			// Timestamp Timestamp of the response
-			Timestamp *string `json:"timestamp,omitempty"`
+			Timestamp string `json:"timestamp"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -885,13 +885,13 @@ type PostAuthOtp200JSONResponse struct {
 	} `json:"data,omitempty"`
 
 	// Message Message from the API call
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 
 	// Success Success status of the API call
-	Success *bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 
 	// Timestamp Timestamp of the response
-	Timestamp *string `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (response PostAuthOtp200JSONResponse) VisitPostAuthOtpResponse(w http.ResponseWriter) error {
@@ -903,25 +903,25 @@ func (response PostAuthOtp200JSONResponse) VisitPostAuthOtpResponse(w http.Respo
 
 type PostAuthOtp400JSONResponse struct {
 	// Error Error object
-	Error *struct {
+	Error struct {
 		// Code Error code
-		Code *string `json:"code,omitempty"`
+		Code string `json:"code"`
 
 		// Message Error message
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Trace Error stack trace for debugging
 		Trace *string `json:"trace,omitempty"`
-	} `json:"error,omitempty"`
+	} `json:"error"`
 
 	// Message Message from the API call
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 
 	// Success Success status of the API call
-	Success *bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 
 	// Timestamp Timestamp of the response
-	Timestamp *string `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (response PostAuthOtp400JSONResponse) VisitPostAuthOtpResponse(w http.ResponseWriter) error {
@@ -933,25 +933,25 @@ func (response PostAuthOtp400JSONResponse) VisitPostAuthOtpResponse(w http.Respo
 
 type PostAuthOtp500JSONResponse struct {
 	// Error Error object
-	Error *struct {
+	Error struct {
 		// Code Error code
-		Code *string `json:"code,omitempty"`
+		Code string `json:"code"`
 
 		// Message Error message
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Trace Error stack trace for debugging
 		Trace *string `json:"trace,omitempty"`
-	} `json:"error,omitempty"`
+	} `json:"error"`
 
 	// Message Message from the API call
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 
 	// Success Success status of the API call
-	Success *bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 
 	// Timestamp Timestamp of the response
-	Timestamp *string `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (response PostAuthOtp500JSONResponse) VisitPostAuthOtpResponse(w http.ResponseWriter) error {
@@ -979,13 +979,13 @@ type PostAuthOtpVerify200JSONResponse struct {
 	} `json:"data,omitempty"`
 
 	// Message Message from the API call
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 
 	// Success Success status of the API call
-	Success *bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 
 	// Timestamp Timestamp of the response
-	Timestamp *string `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (response PostAuthOtpVerify200JSONResponse) VisitPostAuthOtpVerifyResponse(w http.ResponseWriter) error {
@@ -997,25 +997,25 @@ func (response PostAuthOtpVerify200JSONResponse) VisitPostAuthOtpVerifyResponse(
 
 type PostAuthOtpVerify400JSONResponse struct {
 	// Error Error object
-	Error *struct {
+	Error struct {
 		// Code Error code
-		Code *string `json:"code,omitempty"`
+		Code string `json:"code"`
 
 		// Message Error message
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Trace Error stack trace for debugging
 		Trace *string `json:"trace,omitempty"`
-	} `json:"error,omitempty"`
+	} `json:"error"`
 
 	// Message Message from the API call
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 
 	// Success Success status of the API call
-	Success *bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 
 	// Timestamp Timestamp of the response
-	Timestamp *string `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (response PostAuthOtpVerify400JSONResponse) VisitPostAuthOtpVerifyResponse(w http.ResponseWriter) error {
@@ -1027,25 +1027,25 @@ func (response PostAuthOtpVerify400JSONResponse) VisitPostAuthOtpVerifyResponse(
 
 type PostAuthOtpVerify500JSONResponse struct {
 	// Error Error object
-	Error *struct {
+	Error struct {
 		// Code Error code
-		Code *string `json:"code,omitempty"`
+		Code string `json:"code"`
 
 		// Message Error message
-		Message *string `json:"message,omitempty"`
+		Message string `json:"message"`
 
 		// Trace Error stack trace for debugging
 		Trace *string `json:"trace,omitempty"`
-	} `json:"error,omitempty"`
+	} `json:"error"`
 
 	// Message Message from the API call
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 
 	// Success Success status of the API call
-	Success *bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 
 	// Timestamp Timestamp of the response
-	Timestamp *string `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (response PostAuthOtpVerify500JSONResponse) VisitPostAuthOtpVerifyResponse(w http.ResponseWriter) error {

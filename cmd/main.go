@@ -13,11 +13,14 @@ import (
 
 func main() {
 	log.Println("Starting server...")
-	mux := http.NewServeMux()
+
+	// Load configuration
 	config, err := environment.Load()
 	if err != nil {
 		log.Fatal("Error loading environment", err)
 	}
+
+	// Initialize database connection
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, config.DatabaseURL)
 	if err != nil {
@@ -25,12 +28,20 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Initialize auth handler
+	// Initialize auth handler - this satisfies the StrictServerInterface
 	authH := authHandler.NewAuthHandler(pool, config)
-	
-	// Setup API routes using the generated OpenAPI handler
-	apiHandler := api.Handler(authH)
-	mux.Handle("/api/v1.1/", http.StripPrefix("/api/v1.1", apiHandler))
+
+	// Create a strict handler that ENFORCES type safety!
+	strictHandler := api.NewStrictHandler(authH, nil)
+
+	// Create a new ServeMux
+	mux := http.NewServeMux()
+
+	// Register our strict handler using the generated HandlerFromMuxWithBaseURL
+	// This automatically handles the routing based on the OpenAPI spec
+	// Base URL matches the server URL in openapi.yml: /api/v1.1
+	// This function registers routes directly on our mux
+	api.HandlerFromMuxWithBaseURL(strictHandler, mux, "/api/v1.1")
 
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./cmd/_docs.html")
@@ -48,5 +59,8 @@ func main() {
 
 	log.Println("Server is running on port 3003")
 	log.Println("API Documentation available at: http://localhost:3003/docs")
+	log.Println("API endpoints:")
+	log.Println("  POST /api/v1.1/auth/otp")
+	log.Println("  POST /api/v1.1/auth/otp-verify")
 	log.Fatal(http.ListenAndServe(":3003", mux))
 }

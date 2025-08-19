@@ -20,10 +20,10 @@ type TokenConfig struct {
 	Audience               string
 }
 type R2Config struct {
-	BucketName string
-	URL         string
-	TokenValue    string
-	AccessKeyID   string
+	BucketName      string
+	URL             string
+	TokenValue      string
+	AccessKeyID     string
 	SecretAccessKey string
 	AccountID       string
 }
@@ -33,8 +33,7 @@ type Config struct {
 	Resend      ResendConfig
 	DatabaseURL string
 	Token       TokenConfig
-	R2         R2Config
-
+	R2          R2Config
 }
 
 func Load() (*Config, error) {
@@ -71,12 +70,12 @@ func Load() (*Config, error) {
 			Audience:               os.Getenv("AUDIENCE"),
 		},
 		R2: R2Config{
-			BucketName:     os.Getenv("R2_BUCKET_NAME"),
-			URL:           os.Getenv("R2_URL"),
-			TokenValue:    os.Getenv("R2_TOKEN_VALUE"),
-			AccessKeyID:  os.Getenv("R2_ACCESS_KEY_ID"),
+			BucketName:      os.Getenv("R2_BUCKET_NAME"),
+			URL:             os.Getenv("R2_URL"),
+			TokenValue:      os.Getenv("R2_TOKEN_VALUE"),
+			AccessKeyID:     os.Getenv("R2_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("R2_SECRET_ACCESS_KEY"),
-			AccountID: os.Getenv("R2_ACCOUNT_ID"),
+			AccountID:       os.Getenv("R2_ACCOUNT_ID"),
 		},
 	}, nil
 }

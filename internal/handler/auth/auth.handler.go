@@ -1,20 +1,20 @@
 package auth
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
+	"regexp"
 
 	"github.com/abdurrahimagca/qq-back/internal/api"
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	authService "github.com/abdurrahimagca/qq-back/internal/service/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"regexp"
 )
 
 type AuthHandler struct {
 	authService *authService.AuthService
-	api.StrictHandlerFunc
 }
+
+var _ api.StrictServerInterface = (*AuthHandler)(nil)
 
 func NewAuthHandler(db *pgxpool.Pool, config *environment.Config) *AuthHandler {
 	return &AuthHandler{
@@ -22,96 +22,104 @@ func NewAuthHandler(db *pgxpool.Pool, config *environment.Config) *AuthHandler {
 	}
 }
 
-func (h *AuthHandler) PostAuthOtp(w http.ResponseWriter, r *http.Request) {
-	// Parse request body
-	var body api.PostAuthOtpJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
+// PostAuthOtp implements StrictServerInterface - this FORCES you to return the correct type!
+func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRequestObject) (api.PostAuthOtpResponseObject, error) {
 	const email_regex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 
 	// Validate email
-	if body.Email == "" {
-		http.Error(w, "Email is required", http.StatusBadRequest)
-		return
+	if request.Body.Email == "" {
+		message := "Email is required"
+		success := false
+		return api.PostAuthOtp400JSONResponse{
+			Message: message,
+			Success: success,
+		}, nil
 	}
 
-	if !regexp.MustCompile(email_regex).MatchString(body.Email) {
-		http.Error(w, "Invalid email address", http.StatusBadRequest)
-		return
+	if !regexp.MustCompile(email_regex).MatchString(request.Body.Email) {
+		//message := "Invalid email address"
+		success := false
+		return api.PostAuthOtp400JSONResponse{
+			//Message: message,
+			Success: success,
+		}, nil
 	}
 
 	// Call service to create user if not exists and send OTP
-	result, err := h.authService.CreateUserIfNotExistWithOtpService(r.Context(), body.Email)
+	result, err := h.authService.CreateUserIfNotExistWithOtpService(ctx, request.Body.Email)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+		message := "Internal server error"
+		success := false
+		return api.PostAuthOtp500JSONResponse{
+			Message: message,
+			Success: success,
+		}, nil
 	}
 
 	if result.Error != nil {
-		http.Error(w, "Failed to process OTP request", http.StatusInternalServerError)
-		return
+		message := "Failed to process OTP request"
+		success := false
+		return api.PostAuthOtp500JSONResponse{
+			Message: message,
+			Success: success,
+		}, nil
 	}
 
-	// Prepare response
-	response := map[string]interface{}{
-		"data": map[string]interface{}{
-			"isNewUser": result.IsNewUser,
-			"message":   "OTP sent successfully",
+	success := true
+	return api.PostAuthOtp200JSONResponse{
+		Data: &struct {
+			IsNewUser *bool `json:"isNewUser,omitempty"`
+		}{
+			IsNewUser: &result.IsNewUser,
 		},
-		"success": true,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+		Success: success,
+	}, nil
 }
 
-// PostAuthOtpVerify handles OTP verification
-func (h *AuthHandler) PostAuthOtpVerify(w http.ResponseWriter, r *http.Request) {
-	// Parse request body
-	var body api.PostAuthOtpVerifyJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
+// PostAuthOtpVerify implements StrictServerInterface - this FORCES you to return the correct type!
+func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAuthOtpVerifyRequestObject) (api.PostAuthOtpVerifyResponseObject, error) {
 	// Validate input
-	if body.Email == "" || body.OtpCode == "" {
-		http.Error(w, "Email and OTP code are required", http.StatusBadRequest)
-		return
+	if request.Body.Email == "" || request.Body.OtpCode == "" {
+		message := "Email and OTP code are required"
+		success := false
+		return api.PostAuthOtpVerify400JSONResponse{
+			Message: message,
+			Success: success,
+		}, nil
 	}
 
 	// Verify OTP
-	userID, email, err := h.authService.VerifyOtpCodeService(r.Context(), body.Email, body.OtpCode)
+	userID, _, err := h.authService.VerifyOtpCodeService(ctx, request.Body.Email, request.Body.OtpCode)
 	if err != nil {
-		http.Error(w, "Invalid OTP code", http.StatusUnauthorized)
-		return
+		message := "Invalid OTP code"
+		success := false
+		return api.PostAuthOtpVerify400JSONResponse{
+			Message: message,
+			Success: success,
+		}, nil
 	}
 
 	// Generate tokens
 	accessToken, refreshToken, err := h.authService.GenerateTokens(*userID)
 	if err != nil {
-		http.Error(w, "Failed to generate tokens", http.StatusInternalServerError)
-		return
+		message := "Failed to generate tokens"
+		success := false
+		return api.PostAuthOtpVerify500JSONResponse{
+			Message: message,
+			Success: success,
+		}, nil
 	}
 
-	// Prepare response
-	response := map[string]interface{}{
-		"data": map[string]interface{}{
-			"accessToken":  accessToken,
-			"refreshToken": refreshToken,
-			"user": map[string]interface{}{
-				"id":    userID,
-				"email": email,
-			},
+	// SUCCESS: You MUST return the correct type or it won't compile!
+	success := true
+	return api.PostAuthOtpVerify200JSONResponse{
+		Data: &struct {
+			AccessToken  *string `json:"accessToken,omitempty"`
+			RefreshToken *string `json:"refreshToken,omitempty"`
+		}{
+			AccessToken:  &accessToken,
+			RefreshToken: &refreshToken,
 		},
-		"success": true,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+		Success: success,
+	}, nil
 }

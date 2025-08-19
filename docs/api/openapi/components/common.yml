@@ -2,6 +2,10 @@ components:
   schemas:
     SuccessResponse:
       type: object
+      required:
+        - success
+        - message
+        - timestamp
       properties:
         success:
           type: boolean
@@ -19,6 +23,11 @@ components:
 
     ErrorResponse:
       type: object
+      required:
+        - success 
+        - message
+        - timestamp
+        - error
       properties:
         success:
           type: boolean
@@ -33,6 +42,9 @@ components:
         error:
           type: object
           description: Error object
+          required:
+            - code
+            - message
           properties:
             code:
               type: string
