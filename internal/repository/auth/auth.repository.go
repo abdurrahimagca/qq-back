@@ -34,6 +34,7 @@ type CreateFirstTimeUserWithOtpResult struct {
 }
 
 func (r *AuthRepository) CreateFirstTimeUserWithOtp(ctx context.Context, tx pgx.Tx, params CreateFirstTimeUserParams) (CreateFirstTimeUserWithOtpResult, error) {
+
 	queries := db.New(tx)
 
 	authId, err := queries.InsertAuth(ctx, db.InsertAuthParams{
