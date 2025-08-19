@@ -1,5 +1,7 @@
 otp:
   post:
+    tags:
+      - Auth
     summary: Send OTP code to email for existing users or create new user account
     description: Send OTP code to email for existing users or create new user account
     requestBody:
@@ -50,6 +52,8 @@ otp:
 
 otp-verify:
   post:
+    tags:
+      - Auth
     summary: Verify OTP code
     description: Verify OTP code
     requestBody:
@@ -110,6 +114,8 @@ otp-verify:
 
 refresh-token:
   post:
+    tags:
+      - Auth
     summary: Refresh access token
     description: Refresh access token
     requestBody:
