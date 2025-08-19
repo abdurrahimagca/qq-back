@@ -101,4 +101,4 @@ fmt-check:
 	cd docker && docker compose exec api sh -c 'if [ -n "$$(gofmt -l .)" ]; then echo "Go files need formatting"; exit 1; fi'
 
 lint:
-	cd docker && docker compose exec api golangci-lint run || echo "golangci-lint not available in container"
+	$(HOME)/go/bin/golangci-lint run

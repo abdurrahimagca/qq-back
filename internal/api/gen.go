@@ -324,17 +324,8 @@ type PostAuthOtpResponse struct {
 		Timestamp string `json:"timestamp"`
 	}
 	JSON400 *struct {
-		// Error Error object
-		Error struct {
-			// Code Error code
-			Code string `json:"code"`
-
-			// Message Error message
-			Message string `json:"message"`
-
-			// Trace Error stack trace for debugging
-			Trace *string `json:"trace,omitempty"`
-		} `json:"error"`
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
 
 		// Message Message from the API call
 		Message string `json:"message"`
@@ -346,17 +337,8 @@ type PostAuthOtpResponse struct {
 		Timestamp string `json:"timestamp"`
 	}
 	JSON500 *struct {
-		// Error Error object
-		Error struct {
-			// Code Error code
-			Code string `json:"code"`
-
-			// Message Error message
-			Message string `json:"message"`
-
-			// Trace Error stack trace for debugging
-			Trace *string `json:"trace,omitempty"`
-		} `json:"error"`
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
 
 		// Message Message from the API call
 		Message string `json:"message"`
@@ -407,17 +389,8 @@ type PostAuthOtpVerifyResponse struct {
 		Timestamp string `json:"timestamp"`
 	}
 	JSON400 *struct {
-		// Error Error object
-		Error struct {
-			// Code Error code
-			Code string `json:"code"`
-
-			// Message Error message
-			Message string `json:"message"`
-
-			// Trace Error stack trace for debugging
-			Trace *string `json:"trace,omitempty"`
-		} `json:"error"`
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
 
 		// Message Message from the API call
 		Message string `json:"message"`
@@ -429,17 +402,8 @@ type PostAuthOtpVerifyResponse struct {
 		Timestamp string `json:"timestamp"`
 	}
 	JSON500 *struct {
-		// Error Error object
-		Error struct {
-			// Code Error code
-			Code string `json:"code"`
-
-			// Message Error message
-			Message string `json:"message"`
-
-			// Trace Error stack trace for debugging
-			Trace *string `json:"trace,omitempty"`
-		} `json:"error"`
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
 
 		// Message Message from the API call
 		Message string `json:"message"`
@@ -539,17 +503,8 @@ func ParsePostAuthOtpResponse(rsp *http.Response) (*PostAuthOtpResponse, error) 
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			// Error Error object
-			Error struct {
-				// Code Error code
-				Code string `json:"code"`
-
-				// Message Error message
-				Message string `json:"message"`
-
-				// Trace Error stack trace for debugging
-				Trace *string `json:"trace,omitempty"`
-			} `json:"error"`
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
 
 			// Message Message from the API call
 			Message string `json:"message"`
@@ -567,17 +522,8 @@ func ParsePostAuthOtpResponse(rsp *http.Response) (*PostAuthOtpResponse, error) 
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
-			// Error Error object
-			Error struct {
-				// Code Error code
-				Code string `json:"code"`
-
-				// Message Error message
-				Message string `json:"message"`
-
-				// Trace Error stack trace for debugging
-				Trace *string `json:"trace,omitempty"`
-			} `json:"error"`
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
 
 			// Message Message from the API call
 			Message string `json:"message"`
@@ -638,17 +584,8 @@ func ParsePostAuthOtpVerifyResponse(rsp *http.Response) (*PostAuthOtpVerifyRespo
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
-			// Error Error object
-			Error struct {
-				// Code Error code
-				Code string `json:"code"`
-
-				// Message Error message
-				Message string `json:"message"`
-
-				// Trace Error stack trace for debugging
-				Trace *string `json:"trace,omitempty"`
-			} `json:"error"`
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
 
 			// Message Message from the API call
 			Message string `json:"message"`
@@ -666,17 +603,8 @@ func ParsePostAuthOtpVerifyResponse(rsp *http.Response) (*PostAuthOtpVerifyRespo
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest struct {
-			// Error Error object
-			Error struct {
-				// Code Error code
-				Code string `json:"code"`
-
-				// Message Error message
-				Message string `json:"message"`
-
-				// Trace Error stack trace for debugging
-				Trace *string `json:"trace,omitempty"`
-			} `json:"error"`
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
 
 			// Message Message from the API call
 			Message string `json:"message"`
@@ -902,17 +830,8 @@ func (response PostAuthOtp200JSONResponse) VisitPostAuthOtpResponse(w http.Respo
 }
 
 type PostAuthOtp400JSONResponse struct {
-	// Error Error object
-	Error struct {
-		// Code Error code
-		Code string `json:"code"`
-
-		// Message Error message
-		Message string `json:"message"`
-
-		// Trace Error stack trace for debugging
-		Trace *string `json:"trace,omitempty"`
-	} `json:"error"`
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
 
 	// Message Message from the API call
 	Message string `json:"message"`
@@ -932,17 +851,8 @@ func (response PostAuthOtp400JSONResponse) VisitPostAuthOtpResponse(w http.Respo
 }
 
 type PostAuthOtp500JSONResponse struct {
-	// Error Error object
-	Error struct {
-		// Code Error code
-		Code string `json:"code"`
-
-		// Message Error message
-		Message string `json:"message"`
-
-		// Trace Error stack trace for debugging
-		Trace *string `json:"trace,omitempty"`
-	} `json:"error"`
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
 
 	// Message Message from the API call
 	Message string `json:"message"`
@@ -996,17 +906,8 @@ func (response PostAuthOtpVerify200JSONResponse) VisitPostAuthOtpVerifyResponse(
 }
 
 type PostAuthOtpVerify400JSONResponse struct {
-	// Error Error object
-	Error struct {
-		// Code Error code
-		Code string `json:"code"`
-
-		// Message Error message
-		Message string `json:"message"`
-
-		// Trace Error stack trace for debugging
-		Trace *string `json:"trace,omitempty"`
-	} `json:"error"`
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
 
 	// Message Message from the API call
 	Message string `json:"message"`
@@ -1026,17 +927,8 @@ func (response PostAuthOtpVerify400JSONResponse) VisitPostAuthOtpVerifyResponse(
 }
 
 type PostAuthOtpVerify500JSONResponse struct {
-	// Error Error object
-	Error struct {
-		// Code Error code
-		Code string `json:"code"`
-
-		// Message Error message
-		Message string `json:"message"`
-
-		// Trace Error stack trace for debugging
-		Trace *string `json:"trace,omitempty"`
-	} `json:"error"`
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
 
 	// Message Message from the API call
 	Message string `json:"message"`

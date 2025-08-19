@@ -4,6 +4,8 @@ import (
 	"context"
 	"regexp"
 
+	"time"
+
 	"github.com/abdurrahimagca/qq-back/internal/api"
 	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	authService "github.com/abdurrahimagca/qq-back/internal/service/auth"
@@ -22,96 +24,90 @@ func NewAuthHandler(db *pgxpool.Pool, config *environment.Config) *AuthHandler {
 	}
 }
 
-// PostAuthOtp implements StrictServerInterface - this FORCES you to return the correct type!
 func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRequestObject) (api.PostAuthOtpResponseObject, error) {
 	const email_regex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 
-	// Validate email
 	if request.Body.Email == "" {
-		message := "Email is required"
+		message := "Email is required, please check your request"
 		success := false
 		return api.PostAuthOtp400JSONResponse{
-			Message: message,
-			Success: success,
+			Message:   message,
+			Success:   success,
+			ErrorCode: "OTP_MAIL_REQUIRED_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
 	if !regexp.MustCompile(email_regex).MatchString(request.Body.Email) {
-		//message := "Invalid email address"
-		success := false
 		return api.PostAuthOtp400JSONResponse{
-			//Message: message,
-			Success: success,
+			Message:   "Invalid email address, please check your request the regex for an email should be `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$`",
+			Success:   false,
+			ErrorCode: "OTP_MAIL_INVALID_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
-	// Call service to create user if not exists and send OTP
 	result, err := h.authService.CreateUserIfNotExistWithOtpService(ctx, request.Body.Email)
 	if err != nil {
-		message := "Internal server error"
-		success := false
 		return api.PostAuthOtp500JSONResponse{
-			Message: message,
-			Success: success,
+			Message:   "Internal server error orijinal error: " + err.Error(),
+			Success:   false,
+			ErrorCode: "OTP_SERVICE_FAILED_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
 	if result.Error != nil {
-		message := "Failed to process OTP request"
-		success := false
 		return api.PostAuthOtp500JSONResponse{
-			Message: message,
-			Success: success,
+			Message:   "Failed to process OTP request, please try again later orijinal error: " + result.Error.Error(),
+			Success:   false,
+			ErrorCode: "OTP_SERVICE_FAILED_RESULT_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
-	success := true
 	return api.PostAuthOtp200JSONResponse{
 		Data: &struct {
 			IsNewUser *bool `json:"isNewUser,omitempty"`
 		}{
 			IsNewUser: &result.IsNewUser,
 		},
-		Success: success,
+		Success:   true,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Message:   "OTP sent successfully",
 	}, nil
 }
 
-// PostAuthOtpVerify implements StrictServerInterface - this FORCES you to return the correct type!
 func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAuthOtpVerifyRequestObject) (api.PostAuthOtpVerifyResponseObject, error) {
-	// Validate input
 	if request.Body.Email == "" || request.Body.OtpCode == "" {
-		message := "Email and OTP code are required"
-		success := false
 		return api.PostAuthOtpVerify400JSONResponse{
-			Message: message,
-			Success: success,
+			Message:   "Email and OTP code are required, please check your request",
+			Success:   false,
+			ErrorCode: "OTP_VERIFY_CODE_AND_EMAIL_REQUIRED_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
-	// Verify OTP
 	userID, _, err := h.authService.VerifyOtpCodeService(ctx, request.Body.Email, request.Body.OtpCode)
 	if err != nil {
-		message := "Invalid OTP code"
-		success := false
 		return api.PostAuthOtpVerify400JSONResponse{
-			Message: message,
-			Success: success,
+			Message:   "Invalid OTP code, please check your request orijinal error: " + err.Error(),
+			Success:   false,
+			ErrorCode: "OTP_VERIFY_CODE_INVALID_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
-	// Generate tokens
 	accessToken, refreshToken, err := h.authService.GenerateTokens(*userID)
 	if err != nil {
-		message := "Failed to generate tokens"
-		success := false
 		return api.PostAuthOtpVerify500JSONResponse{
-			Message: message,
-			Success: success,
+			Message:   "Failed to generate tokens",
+			Success:   false,
+			ErrorCode: "OTP_GENERATE_TOKENS_FAILED_1",
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
-	// SUCCESS: You MUST return the correct type or it won't compile!
-	success := true
 	return api.PostAuthOtpVerify200JSONResponse{
 		Data: &struct {
 			AccessToken  *string `json:"accessToken,omitempty"`
@@ -120,6 +116,8 @@ func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAut
 			AccessToken:  &accessToken,
 			RefreshToken: &refreshToken,
 		},
-		Success: success,
+		Success:   true,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Message:   "OTP verified successfully",
 	}, nil
 }

@@ -23,35 +23,29 @@ components:
 
     ErrorResponse:
       type: object
+      additionalProperties: false
       required:
         - success 
         - message
         - timestamp
-        - error
+        - errorCode
+        - errorTrace
       properties:
         success:
           type: boolean
           description: Success status of the API call
+          x-omitempty: false
         message:
           type: string
           description: Message from the API call
+          x-omitempty: false
         timestamp:
           type: string
           description: Timestamp of the response
           example: '2021-01-01T00:00:00Z'
-        error:
-          type: object
-          description: Error object
-          required:
-            - code
-            - message
-          properties:
-            code:
-              type: string
-              description: Error code
-            message:
-              type: string
-              description: Error message
-            trace:
-              type: string
-              description: Error stack trace for debugging
+          x-omitempty: false
+        errorCode:
+          type: string
+          description: Error code
+          x-omitempty: false
+    

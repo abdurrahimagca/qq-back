@@ -1,0 +1,23 @@
+version: 2
+
+run:
+  timeout: 5m
+  go: "1.24"
+
+linters:
+  enable:
+    - exhaustruct
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+
+linters-settings:
+  exhaustruct:
+    # Enforce all struct fields to be explicitly set
+    include:
+      - ".*JSONResponse$"  # All API response structs
+    exclude:
+      # Exclude structs where you don't want to enforce all fields
+      - ".*Test.*"
