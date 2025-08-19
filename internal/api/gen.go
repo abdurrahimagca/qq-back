@@ -18,6 +18,10 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+const (
+	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
 // PostAuthOtpJSONBody defines parameters for PostAuthOtp.
 type PostAuthOtpJSONBody struct {
 	// Email Email address of the user
@@ -33,11 +37,20 @@ type PostAuthOtpVerifyJSONBody struct {
 	OtpCode string `json:"otpCode"`
 }
 
+// PostAuthRefreshTokenJSONBody defines parameters for PostAuthRefreshToken.
+type PostAuthRefreshTokenJSONBody struct {
+	// RefreshToken Refresh token for the user
+	RefreshToken string `json:"refreshToken"`
+}
+
 // PostAuthOtpJSONRequestBody defines body for PostAuthOtp for application/json ContentType.
 type PostAuthOtpJSONRequestBody PostAuthOtpJSONBody
 
 // PostAuthOtpVerifyJSONRequestBody defines body for PostAuthOtpVerify for application/json ContentType.
 type PostAuthOtpVerifyJSONRequestBody PostAuthOtpVerifyJSONBody
+
+// PostAuthRefreshTokenJSONRequestBody defines body for PostAuthRefreshToken for application/json ContentType.
+type PostAuthRefreshTokenJSONRequestBody PostAuthRefreshTokenJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -121,6 +134,14 @@ type ClientInterface interface {
 	PostAuthOtpVerifyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostAuthOtpVerify(ctx context.Context, body PostAuthOtpVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostAuthRefreshTokenWithBody request with any body
+	PostAuthRefreshTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostAuthRefreshToken(ctx context.Context, body PostAuthRefreshTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetUserProfile request
+	GetUserProfile(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) PostAuthOtpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -161,6 +182,42 @@ func (c *Client) PostAuthOtpVerifyWithBody(ctx context.Context, contentType stri
 
 func (c *Client) PostAuthOtpVerify(ctx context.Context, body PostAuthOtpVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostAuthOtpVerifyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAuthRefreshTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAuthRefreshTokenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAuthRefreshToken(ctx context.Context, body PostAuthRefreshTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAuthRefreshTokenRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetUserProfile(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUserProfileRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +308,73 @@ func NewPostAuthOtpVerifyRequestWithBody(server string, contentType string, body
 	return req, nil
 }
 
+// NewPostAuthRefreshTokenRequest calls the generic PostAuthRefreshToken builder with application/json body
+func NewPostAuthRefreshTokenRequest(server string, body PostAuthRefreshTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostAuthRefreshTokenRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostAuthRefreshTokenRequestWithBody generates requests for PostAuthRefreshToken with any type of body
+func NewPostAuthRefreshTokenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/auth/refresh-token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetUserProfileRequest generates requests for GetUserProfile
+func NewGetUserProfileRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/profile")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -303,6 +427,14 @@ type ClientWithResponsesInterface interface {
 	PostAuthOtpVerifyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAuthOtpVerifyResponse, error)
 
 	PostAuthOtpVerifyWithResponse(ctx context.Context, body PostAuthOtpVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAuthOtpVerifyResponse, error)
+
+	// PostAuthRefreshTokenWithBodyWithResponse request with any body
+	PostAuthRefreshTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAuthRefreshTokenResponse, error)
+
+	PostAuthRefreshTokenWithResponse(ctx context.Context, body PostAuthRefreshTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAuthRefreshTokenResponse, error)
+
+	// GetUserProfileWithResponse request
+	GetUserProfileWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserProfileResponse, error)
 }
 
 type PostAuthOtpResponse struct {
@@ -432,6 +564,148 @@ func (r PostAuthOtpVerifyResponse) StatusCode() int {
 	return 0
 }
 
+type PostAuthRefreshTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// AccessToken Access token for the user
+		AccessToken *string `json:"accessToken,omitempty"`
+
+		// Data Data returned by the API call
+		Data *map[string]interface{} `json:"data,omitempty"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// RefreshToken Refresh token for the user
+		RefreshToken *string `json:"refreshToken,omitempty"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+	JSON400 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+	JSON401 *struct {
+		// Message Message from the API call
+		Message *string `json:"message"`
+
+		// Timestamp Timestamp of the response
+		Timestamp *string `json:"timestamp"`
+	}
+	JSON500 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostAuthRefreshTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostAuthRefreshTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetUserProfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// AvatarSignedUrl Long live avatar URL of the user, valid for 1 month
+		AvatarSignedUrl *string `json:"avatarSignedUrl"`
+
+		// Data Data returned by the API call
+		Data *map[string]interface{} `json:"data,omitempty"`
+
+		// DisplayName Display name of the user
+		DisplayName *string `json:"displayName"`
+
+		// Email Email of the user
+		Email *string `json:"email,omitempty"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// PrivacyLevel Privacy level of the user, public, private, full_private
+		PrivacyLevel *string `json:"privacyLevel,omitempty"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+
+		// Username Username of the user
+		Username *string `json:"username,omitempty"`
+	}
+	JSON401 *struct {
+		// Message Message from the API call
+		Message *string `json:"message"`
+
+		// Timestamp Timestamp of the response
+		Timestamp *string `json:"timestamp"`
+	}
+	JSON500 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUserProfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUserProfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // PostAuthOtpWithBodyWithResponse request with arbitrary body returning *PostAuthOtpResponse
 func (c *ClientWithResponses) PostAuthOtpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAuthOtpResponse, error) {
 	rsp, err := c.PostAuthOtpWithBody(ctx, contentType, body, reqEditors...)
@@ -464,6 +738,32 @@ func (c *ClientWithResponses) PostAuthOtpVerifyWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParsePostAuthOtpVerifyResponse(rsp)
+}
+
+// PostAuthRefreshTokenWithBodyWithResponse request with arbitrary body returning *PostAuthRefreshTokenResponse
+func (c *ClientWithResponses) PostAuthRefreshTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAuthRefreshTokenResponse, error) {
+	rsp, err := c.PostAuthRefreshTokenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAuthRefreshTokenResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostAuthRefreshTokenWithResponse(ctx context.Context, body PostAuthRefreshTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAuthRefreshTokenResponse, error) {
+	rsp, err := c.PostAuthRefreshToken(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAuthRefreshTokenResponse(rsp)
+}
+
+// GetUserProfileWithResponse request returning *GetUserProfileResponse
+func (c *ClientWithResponses) GetUserProfileWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserProfileResponse, error) {
+	rsp, err := c.GetUserProfile(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUserProfileResponse(rsp)
 }
 
 // ParsePostAuthOtpResponse parses an HTTP response from a PostAuthOtpWithResponse call
@@ -625,6 +925,186 @@ func ParsePostAuthOtpVerifyResponse(rsp *http.Response) (*PostAuthOtpVerifyRespo
 	return response, nil
 }
 
+// ParsePostAuthRefreshTokenResponse parses an HTTP response from a PostAuthRefreshTokenWithResponse call
+func ParsePostAuthRefreshTokenResponse(rsp *http.Response) (*PostAuthRefreshTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostAuthRefreshTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// AccessToken Access token for the user
+			AccessToken *string `json:"accessToken,omitempty"`
+
+			// Data Data returned by the API call
+			Data *map[string]interface{} `json:"data,omitempty"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// RefreshToken Refresh token for the user
+			RefreshToken *string `json:"refreshToken,omitempty"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			// Message Message from the API call
+			Message *string `json:"message"`
+
+			// Timestamp Timestamp of the response
+			Timestamp *string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetUserProfileResponse parses an HTTP response from a GetUserProfileWithResponse call
+func ParseGetUserProfileResponse(rsp *http.Response) (*GetUserProfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUserProfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// AvatarSignedUrl Long live avatar URL of the user, valid for 1 month
+			AvatarSignedUrl *string `json:"avatarSignedUrl"`
+
+			// Data Data returned by the API call
+			Data *map[string]interface{} `json:"data,omitempty"`
+
+			// DisplayName Display name of the user
+			DisplayName *string `json:"displayName"`
+
+			// Email Email of the user
+			Email *string `json:"email,omitempty"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// PrivacyLevel Privacy level of the user, public, private, full_private
+			PrivacyLevel *string `json:"privacyLevel,omitempty"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+
+			// Username Username of the user
+			Username *string `json:"username,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			// Message Message from the API call
+			Message *string `json:"message"`
+
+			// Timestamp Timestamp of the response
+			Timestamp *string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Send OTP code to email for existing users or create new user account
@@ -633,6 +1113,12 @@ type ServerInterface interface {
 	// Verify OTP code
 	// (POST /auth/otp-verify)
 	PostAuthOtpVerify(w http.ResponseWriter, r *http.Request)
+	// Refresh access token
+	// (POST /auth/refresh-token)
+	PostAuthRefreshToken(w http.ResponseWriter, r *http.Request)
+	// Get user information
+	// (GET /user/profile)
+	GetUserProfile(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -663,6 +1149,40 @@ func (siw *ServerInterfaceWrapper) PostAuthOtpVerify(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostAuthOtpVerify(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAuthRefreshToken operation middleware
+func (siw *ServerInterfaceWrapper) PostAuthRefreshToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAuthRefreshToken(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUserProfile operation middleware
+func (siw *ServerInterfaceWrapper) GetUserProfile(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserProfile(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -794,6 +1314,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc("POST "+options.BaseURL+"/auth/otp", wrapper.PostAuthOtp)
 	m.HandleFunc("POST "+options.BaseURL+"/auth/otp-verify", wrapper.PostAuthOtpVerify)
+	m.HandleFunc("POST "+options.BaseURL+"/auth/refresh-token", wrapper.PostAuthRefreshToken)
+	m.HandleFunc("GET "+options.BaseURL+"/user/profile", wrapper.GetUserProfile)
 
 	return m
 }
@@ -947,6 +1469,177 @@ func (response PostAuthOtpVerify500JSONResponse) VisitPostAuthOtpVerifyResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostAuthRefreshTokenRequestObject struct {
+	Body *PostAuthRefreshTokenJSONRequestBody
+}
+
+type PostAuthRefreshTokenResponseObject interface {
+	VisitPostAuthRefreshTokenResponse(w http.ResponseWriter) error
+}
+
+type PostAuthRefreshToken200JSONResponse struct {
+	// AccessToken Access token for the user
+	AccessToken *string `json:"accessToken,omitempty"`
+
+	// Data Data returned by the API call
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// RefreshToken Refresh token for the user
+	RefreshToken *string `json:"refreshToken,omitempty"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostAuthRefreshToken200JSONResponse) VisitPostAuthRefreshTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAuthRefreshToken400JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostAuthRefreshToken400JSONResponse) VisitPostAuthRefreshTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAuthRefreshToken401JSONResponse struct {
+	// Message Message from the API call
+	Message *string `json:"message"`
+
+	// Timestamp Timestamp of the response
+	Timestamp *string `json:"timestamp"`
+}
+
+func (response PostAuthRefreshToken401JSONResponse) VisitPostAuthRefreshTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAuthRefreshToken500JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostAuthRefreshToken500JSONResponse) VisitPostAuthRefreshTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserProfileRequestObject struct {
+}
+
+type GetUserProfileResponseObject interface {
+	VisitGetUserProfileResponse(w http.ResponseWriter) error
+}
+
+type GetUserProfile200JSONResponse struct {
+	// AvatarSignedUrl Long live avatar URL of the user, valid for 1 month
+	AvatarSignedUrl *string `json:"avatarSignedUrl"`
+
+	// Data Data returned by the API call
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// DisplayName Display name of the user
+	DisplayName *string `json:"displayName"`
+
+	// Email Email of the user
+	Email *string `json:"email,omitempty"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// PrivacyLevel Privacy level of the user, public, private, full_private
+	PrivacyLevel *string `json:"privacyLevel,omitempty"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+
+	// Username Username of the user
+	Username *string `json:"username,omitempty"`
+}
+
+func (response GetUserProfile200JSONResponse) VisitGetUserProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserProfile401JSONResponse struct {
+	// Message Message from the API call
+	Message *string `json:"message"`
+
+	// Timestamp Timestamp of the response
+	Timestamp *string `json:"timestamp"`
+}
+
+func (response GetUserProfile401JSONResponse) VisitGetUserProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserProfile500JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response GetUserProfile500JSONResponse) VisitGetUserProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Send OTP code to email for existing users or create new user account
@@ -955,6 +1648,12 @@ type StrictServerInterface interface {
 	// Verify OTP code
 	// (POST /auth/otp-verify)
 	PostAuthOtpVerify(ctx context.Context, request PostAuthOtpVerifyRequestObject) (PostAuthOtpVerifyResponseObject, error)
+	// Refresh access token
+	// (POST /auth/refresh-token)
+	PostAuthRefreshToken(ctx context.Context, request PostAuthRefreshTokenRequestObject) (PostAuthRefreshTokenResponseObject, error)
+	// Get user information
+	// (GET /user/profile)
+	GetUserProfile(ctx context.Context, request GetUserProfileRequestObject) (GetUserProfileResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -1041,6 +1740,61 @@ func (sh *strictHandler) PostAuthOtpVerify(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostAuthOtpVerifyResponseObject); ok {
 		if err := validResponse.VisitPostAuthOtpVerifyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAuthRefreshToken operation middleware
+func (sh *strictHandler) PostAuthRefreshToken(w http.ResponseWriter, r *http.Request) {
+	var request PostAuthRefreshTokenRequestObject
+
+	var body PostAuthRefreshTokenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAuthRefreshToken(ctx, request.(PostAuthRefreshTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAuthRefreshToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAuthRefreshTokenResponseObject); ok {
+		if err := validResponse.VisitPostAuthRefreshTokenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUserProfile operation middleware
+func (sh *strictHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
+	var request GetUserProfileRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUserProfile(ctx, request.(GetUserProfileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUserProfile")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserProfileResponseObject); ok {
+		if err := validResponse.VisitGetUserProfileResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

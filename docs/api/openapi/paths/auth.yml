@@ -107,3 +107,61 @@ otp-verify:
           application/json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+
+refresh-token:
+  post:
+    summary: Refresh access token
+    description: Refresh access token
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              refreshToken:
+                type: string
+                description: Refresh token for the user
+                example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+            required:
+              - refreshToken
+            example:
+              refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+    responses:
+      '200':
+        description: Access token refreshed successfully
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    refreshToken:
+                      type: string
+                      description: Refresh token for the user
+                      example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+                    accessToken:
+                      type: string
+                      description: Access token for the user
+                      example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+      '400':
+        summary: Bad request - Invalid refresh token
+        description: Bad request - Invalid refresh token, usually due to refresh token is not a valid refresh token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+              

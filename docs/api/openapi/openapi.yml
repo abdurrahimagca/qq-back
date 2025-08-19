@@ -7,8 +7,20 @@ servers:
   - url: 'http://localhost:3003/api/v1.1'
     description: 'Local Development Server v1.1'
 
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
 paths:
   /auth/otp:
     $ref: './paths/auth.yml#/otp'
   /auth/otp-verify:
     $ref: './paths/auth.yml#/otp-verify'
+  /auth/refresh-token:
+    $ref: './paths/auth.yml#/refresh-token'
+  /user/profile:
+    $ref: './paths/user.yml#/profile'

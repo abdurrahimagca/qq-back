@@ -1,0 +1,27 @@
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        displayName:
+          type: string
+          nullable: true
+          description: Display name of the user
+          example: 'John Doe'
+        username:
+          type: string
+          description: Username of the user
+          example: 'john_doe'
+        avatarSignedUrl:
+          type: string
+          nullable: true
+          description: Long live avatar URL of the user, valid for 1 month
+          example: 'https://example.com/avatar.png'
+        privacyLevel:
+          type: string
+          description: Privacy level of the user, public, private, full_private
+          example: public
+        email:
+          type: string
+          description: Email of the user
+          example: 'john.doe@example.com'

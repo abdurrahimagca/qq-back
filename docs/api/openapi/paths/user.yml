@@ -1,0 +1,101 @@
+profile:
+  get:
+    summary: Get user information
+    description: Get user information
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: User information
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+                - $ref: '../components/user.yml#/components/schemas/User'
+      '401':
+        description: Unauthorized, please check your access token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+  /profile/update:
+    post:
+      summary: Update user information
+      description: Update user information
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '../components/user.yml#/components/schemas/User'
+      responses:
+        '200':
+          description: User information updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+                  - $ref: '../components/user.yml#/components/schemas/User'
+                    properties:
+                      reVerifyOtp:
+                        type: boolean
+                        description: Whether to re-verify OTP, if email is changed, you need to re-verify OTP
+                        example: false
+        '401':
+          description: Unauthorized, please check your access token
+          content:
+            application/json:
+              schema:
+                $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+  /profile/update-avatar:
+    put:
+      summary: Update avatar
+      description: Update avatar
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          rawdata:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Avatar updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+                    properties:
+                      avatarSignedUrl:
+                        type: string
+                        description: Long live avatar URL of the user, valid for 1 month
+                        example: 'https://example.com/avatar.png'
+        '401':
+          description: Unauthorized, please check your access token
+          content:
+            application/json:
+              schema:
+                $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'

@@ -124,3 +124,4 @@ func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAut
 		Message:   "OTP verified successfully",
 	}, nil
 }
+
