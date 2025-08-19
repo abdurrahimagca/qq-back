@@ -26,6 +26,7 @@ func NewAuthHandler(db *pgxpool.Pool, config *environment.Config) *AuthHandler {
 
 func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRequestObject) (api.PostAuthOtpResponseObject, error) {
 	const email_regex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	timestamp := time.Now().Format(time.RFC3339)
 
 	if request.Body.Email == "" {
 		message := "Email is required, please check your request"
@@ -34,7 +35,7 @@ func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRe
 			Message:   message,
 			Success:   success,
 			ErrorCode: "OTP_MAIL_REQUIRED_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -43,7 +44,7 @@ func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRe
 			Message:   "Invalid email address, please check your request the regex for an email should be `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$`",
 			Success:   false,
 			ErrorCode: "OTP_MAIL_INVALID_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -53,7 +54,7 @@ func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRe
 			Message:   "Internal server error orijinal error: " + err.Error(),
 			Success:   false,
 			ErrorCode: "OTP_SERVICE_FAILED_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -62,7 +63,7 @@ func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRe
 			Message:   "Failed to process OTP request, please try again later orijinal error: " + result.Error.Error(),
 			Success:   false,
 			ErrorCode: "OTP_SERVICE_FAILED_RESULT_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -73,18 +74,20 @@ func (h *AuthHandler) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRe
 			IsNewUser: &result.IsNewUser,
 		},
 		Success:   true,
-		Timestamp: time.Now().Format(time.RFC3339),
+		Timestamp: timestamp,
 		Message:   "OTP sent successfully",
 	}, nil
 }
 
 func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAuthOtpVerifyRequestObject) (api.PostAuthOtpVerifyResponseObject, error) {
+	timestamp := time.Now().Format(time.RFC3339)
+
 	if request.Body.Email == "" || request.Body.OtpCode == "" {
 		return api.PostAuthOtpVerify400JSONResponse{
 			Message:   "Email and OTP code are required, please check your request",
 			Success:   false,
 			ErrorCode: "OTP_VERIFY_CODE_AND_EMAIL_REQUIRED_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -94,7 +97,7 @@ func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAut
 			Message:   "Invalid OTP code, please check your request orijinal error: " + err.Error(),
 			Success:   false,
 			ErrorCode: "OTP_VERIFY_CODE_INVALID_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -104,7 +107,7 @@ func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAut
 			Message:   "Failed to generate tokens",
 			Success:   false,
 			ErrorCode: "OTP_GENERATE_TOKENS_FAILED_1",
-			Timestamp: time.Now().Format(time.RFC3339),
+			Timestamp: timestamp,
 		}, nil
 	}
 
@@ -117,7 +120,7 @@ func (h *AuthHandler) PostAuthOtpVerify(ctx context.Context, request api.PostAut
 			RefreshToken: &refreshToken,
 		},
 		Success:   true,
-		Timestamp: time.Now().Format(time.RFC3339),
+		Timestamp: timestamp,
 		Message:   "OTP verified successfully",
 	}, nil
 }
