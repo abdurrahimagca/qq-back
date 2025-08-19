@@ -22,16 +22,6 @@ SET username = COALESCE(sqlc.narg(username), username),
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
--- name: SearchUserByAuthID :one
-SELECT id, privacy_level, auth_id, username, display_name, avatar_key, created_at, updated_at FROM users WHERE auth_id = sqlc.arg(auth_id) LIMIT 1;
-
--- name: SearchAuthByEmail :one
-SELECT * FROM auth WHERE email = sqlc.arg(email) LIMIT 1;
-
-
--- name: DeleteOtpCodeById :exec
-DELETE FROM auth_otp_codes WHERE id = sqlc.arg(id);
-
 -- name: GetUserIdAndEmailByOtpCode :one
 SELECT users.id, auth.email , auth.id as auth_id
 FROM users 
@@ -48,3 +38,6 @@ SELECT * FROM users WHERE id = sqlc.arg(id) LIMIT 1;
 
 -- name: DeleteOtpCodeEntryByAuthID :exec
 DELETE FROM auth_otp_codes WHERE auth_id = sqlc.arg(auth_id);
+
+-- name: DeleteOtpCodesByEmail :one
+DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email)) RETURNING COUNT(*);

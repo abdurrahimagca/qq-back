@@ -113,17 +113,7 @@ func (r *AuthRepository) InsertNewOtpCodeForUser(ctx context.Context, tx pgx.Tx,
 	return nil
 }
 
-func (r *AuthRepository) DeleteOtpCodeById(ctx context.Context, tx pgx.Tx, id pgtype.UUID) error {
-	queries := db.New(tx)
 
-	err := queries.DeleteOtpCodeById(ctx, id)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func (r *AuthRepository) DeleteOtpCodeEntryByAuthID(ctx context.Context, tx pgx.Tx, authID pgtype.UUID) error {
 	queries := db.New(tx)

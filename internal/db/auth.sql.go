@@ -11,15 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const deleteOtpCodeById = `-- name: DeleteOtpCodeById :exec
-DELETE FROM auth_otp_codes WHERE id = $1
-`
-
-func (q *Queries) DeleteOtpCodeById(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteOtpCodeById, id)
-	return err
-}
-
 const deleteOtpCodeEntryByAuthID = `-- name: DeleteOtpCodeEntryByAuthID :exec
 DELETE FROM auth_otp_codes WHERE auth_id = $1
 `
@@ -27,6 +18,17 @@ DELETE FROM auth_otp_codes WHERE auth_id = $1
 func (q *Queries) DeleteOtpCodeEntryByAuthID(ctx context.Context, authID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteOtpCodeEntryByAuthID, authID)
 	return err
+}
+
+const deleteOtpCodesByEmail = `-- name: DeleteOtpCodesByEmail :one
+DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = $1) RETURNING COUNT(*)
+`
+
+func (q *Queries) DeleteOtpCodesByEmail(ctx context.Context, email string) (int64, error) {
+	row := q.db.QueryRow(ctx, deleteOtpCodesByEmail, email)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
@@ -151,56 +153,6 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
-}
-
-const searchAuthByEmail = `-- name: SearchAuthByEmail :one
-SELECT id, email, provider, provider_id, is_suspended, created_at, updated_at FROM auth WHERE email = $1 LIMIT 1
-`
-
-func (q *Queries) SearchAuthByEmail(ctx context.Context, email string) (Auth, error) {
-	row := q.db.QueryRow(ctx, searchAuthByEmail, email)
-	var i Auth
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Provider,
-		&i.ProviderID,
-		&i.IsSuspended,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const searchUserByAuthID = `-- name: SearchUserByAuthID :one
-SELECT id, privacy_level, auth_id, username, display_name, avatar_key, created_at, updated_at FROM users WHERE auth_id = $1 LIMIT 1
-`
-
-type SearchUserByAuthIDRow struct {
-	ID           pgtype.UUID      `json:"id"`
-	PrivacyLevel PrivacyLevel     `json:"privacyLevel"`
-	AuthID       pgtype.UUID      `json:"authId"`
-	Username     string           `json:"username"`
-	DisplayName  pgtype.Text      `json:"displayName"`
-	AvatarKey    pgtype.Text      `json:"avatarKey"`
-	CreatedAt    pgtype.Timestamp `json:"createdAt"`
-	UpdatedAt    pgtype.Timestamp `json:"updatedAt"`
-}
-
-func (q *Queries) SearchUserByAuthID(ctx context.Context, authID pgtype.UUID) (SearchUserByAuthIDRow, error) {
-	row := q.db.QueryRow(ctx, searchUserByAuthID, authID)
-	var i SearchUserByAuthIDRow
-	err := row.Scan(
-		&i.ID,
-		&i.PrivacyLevel,
-		&i.AuthID,
-		&i.Username,
-		&i.DisplayName,
-		&i.AvatarKey,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one

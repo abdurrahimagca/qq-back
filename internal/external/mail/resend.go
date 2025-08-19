@@ -18,10 +18,10 @@ func SendOTPMail(ctx context.Context, params SendOTPMailParams) error {
 	client := resend.NewClient(params.Config.Resend.Key)
 
 	emailParams := &resend.SendEmailRequest{
-		From:    "QQ Quote <qq@homelab-kaleici.space>",
+		From:    "QQ App <qq@homelab-kaleici.space>",
 		To:      []string{params.To},
-		Html:    fmt.Sprintf("<p>Thanks for using QQ Quote!</p><p>Your OTP code is: <strong>%s</strong></p><p>This code will expire in 3 minutes.</p>", params.Code),
-		Subject: "Your OTP Code For QQ Quote",
+		Html:    fmt.Sprintf("<div style='font-family: Arial, sans-serif;'>Thanks for using QQ App!</div><div style='font-family: Arial, sans-serif;'>Your OTP code is: <strong>%s</strong></div><div style='font-family: Arial, sans-serif;'>This code will expire in 3 minutes.</div>", params.Code),
+		Subject: "Your OTP Code For QQ App",
 	}
 
 	sent, err := client.Emails.Send(emailParams)
