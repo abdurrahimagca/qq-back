@@ -30,6 +30,7 @@ JOIN auth_otp_codes ON auth.id = auth_otp_codes.auth_id
 WHERE auth_otp_codes.code = sqlc.arg(code) AND auth_otp_codes.expires_at > CURRENT_TIMESTAMP 
 LIMIT 1;
 
+
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email)) LIMIT 1;
 

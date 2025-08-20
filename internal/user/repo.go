@@ -15,6 +15,8 @@ type Repository interface {
 	WithTx(tx pgx.Tx) Repository
 	GetUserByID(ctx context.Context, userID uuid.UUID) (User, error)
 	CreateUser(ctx context.Context, username string) (User, error)
+	CreateUserWithAuthID(ctx context.Context, authID uuid.UUID, username string) (User, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
 }
 
 type pgxRepository struct {
@@ -45,9 +47,30 @@ func (r *pgxRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (User
 }
 
 func (r *pgxRepository) CreateUser(ctx context.Context, username string) (User, error) {
+	// This method is deprecated - use CreateUserWithAuthID instead
+	// Keeping for backward compatibility but should not be used
 	dbUser, err := r.q.InsertUser(ctx, db.InsertUserParams{
 		Username: username,
+		// AuthID is required but not provided - this will fail
 	})
+	if err != nil {
+		return User{}, err
+	}
+	return mapDBUserToDomainUser(dbUser), nil
+}
+
+func (r *pgxRepository) CreateUserWithAuthID(ctx context.Context, authID uuid.UUID, username string) (User, error) {
+	dbUser, err := r.q.InsertUser(ctx, db.InsertUserParams{
+		AuthID:   pgtype.UUID{Bytes: authID, Valid: true},
+		Username: username,
+	})
+	if err != nil {
+		return User{}, err
+	}
+	return mapDBUserToDomainUser(dbUser), nil
+}
+func (r *pgxRepository) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	dbUser, err := r.q.GetUserByEmail(ctx, email)
 	if err != nil {
 		return User{}, err
 	}
@@ -67,6 +90,7 @@ func mapDBUserToDomainUser(dbUser db.User) User {
 
 	return User{
 		ID:           dbUser.ID.Bytes,
+		AuthID:       dbUser.AuthID.Bytes,
 		Username:     dbUser.Username,
 		DisplayName:  displayName,
 		PrivacyLevel: string(dbUser.PrivacyLevel),

@@ -12,9 +12,13 @@ import (
 
 // Service arayüzü, auth domain'inin temel yeteneklerini tanımlar.
 type Service interface {
-	GenerateAndSaveOTP(ctx context.Context, tx pgx.Tx, userID uuid.UUID) (string, error)
-	VerifyOTP(ctx context.Context, tx pgx.Tx, email string, otpCode string) error
-	CreateNewAuthForOTPLogin(ctx context.Context, tx pgx.Tx, email string) (*uuid.UUID, error)
+	WithTx(tx pgx.Tx) Service
+	GenerateAndSaveOTP(ctx context.Context, userID uuid.UUID) (string, error) // Deprecated - use GenerateAndSaveOTPForAuth
+	GenerateAndSaveOTPForAuth(ctx context.Context, authID uuid.UUID) (string, error)
+	VerifyOTP(ctx context.Context, email string, otpCode string) error
+	KillOrphanedOTPsByUserID(ctx context.Context, userID uuid.UUID) error
+	KillOrphanedOTPs(ctx context.Context, email string) error
+	CreateNewAuthForOTPLogin(ctx context.Context, email string) (*uuid.UUID, error)
 }
 
 type service struct {
@@ -24,8 +28,11 @@ type service struct {
 func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
+func (s *service) WithTx(tx pgx.Tx) Service {
+	return &service{repo: s.repo.WithTx(tx)}
+}
 
-func (s *service) CreateNewAuthForOTPLogin(ctx context.Context, tx pgx.Tx, email string) (*uuid.UUID, error) {
+func (s *service) CreateNewAuthForOTPLogin(ctx context.Context, email string) (*uuid.UUID, error) {
 	id, err := s.repo.CreateAuthForOTPLogin(ctx, email)
 	if err != nil {
 		return nil, err
@@ -33,42 +40,46 @@ func (s *service) CreateNewAuthForOTPLogin(ctx context.Context, tx pgx.Tx, email
 	return &id, nil
 }
 
-func (s *service) GenerateAndSaveOTP(ctx context.Context, tx pgx.Tx, userID uuid.UUID) (string, error) {
-	// Transaction'a bağlı bir repo al
-	txRepo := s.repo.WithTx(tx)
-
-	// 1. İş Kuralı: Önce kullanıcının mevcut, geçerli tüm OTP'lerini sil.
-	if err := txRepo.KillOrphanedOTPsByUserID(ctx, pgtype.UUID{Bytes: userID, Valid: true}); err != nil { // repo'da böyle bir metot olmalı
-		return "", err
-	}
-
-	// 2. İş Kuralı: Yeni OTP kodunu ve hash'ini oluştur.
+func (s *service) GenerateAndSaveOTP(ctx context.Context, userID uuid.UUID) (string, error) {
+	// Deprecated: This method incorrectly treats userID as authID
+	// Use GenerateAndSaveOTPForAuth instead
 	otpCode := strings.ToUpper("QQ" + uuid.NewString()[:6])
 	otpHash := sha256.Sum256([]byte(otpCode))
 
-	// 3. Yeni OTP'yi DB'ye kaydet.
-	if err := txRepo.CreateOTP(ctx, userID, string(otpHash[:])); err != nil {
+	if err := s.repo.CreateOTP(ctx, userID, string(otpHash[:])); err != nil {
 		return "", err
 	}
 
-	// Ham kodu (hash'lenmemiş) geri dön, çünkü bu e-posta ile gönderilecek.
 	return otpCode, nil
 }
 
-func (s *service) VerifyOTP(ctx context.Context, tx pgx.Tx, email string, otpCode string) error {
-	txRepo := s.repo.WithTx(tx)
-
-	// İş Kuralı: Gelen kodu hash'le ve DB'deki ile karşılaştır.
+func (s *service) GenerateAndSaveOTPForAuth(ctx context.Context, authID uuid.UUID) (string, error) {
+	otpCode := strings.ToUpper("QQ" + uuid.NewString()[:6])
 	otpHash := sha256.Sum256([]byte(otpCode))
-	usr, err := txRepo.GetUserIdAndEmailByOtpCode(ctx, string(otpHash[:]))
+
+	if err := s.repo.CreateOTP(ctx, authID, string(otpHash[:])); err != nil {
+		return "", err
+	}
+
+	return otpCode, nil
+}
+
+func (s *service) KillOrphanedOTPsByUserID(ctx context.Context, userID uuid.UUID) error {
+	return s.repo.KillOrphanedOTPsByUserID(ctx, pgtype.UUID{Bytes: userID, Valid: true})
+}
+
+func (s *service) KillOrphanedOTPs(ctx context.Context, email string) error {
+	return s.repo.KillOrphanedOTPs(ctx, email)
+}
+
+func (s *service) VerifyOTP(ctx context.Context, email string, otpCode string) error {
+	otpHash := sha256.Sum256([]byte(otpCode))
+	usr, err := s.repo.GetUserIdAndEmailByOtpCode(ctx, string(otpHash[:]))
 	if err != nil {
 		return err
 	}
 	if usr.Email != email {
 		return ErrInvalidOtpCode
-	}
-	if err := txRepo.KillOrphanedOTPs(ctx, usr.Email); err != nil {
-		return err
 	}
 	return nil
 
