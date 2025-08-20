@@ -24,7 +24,6 @@ func NewResendMailer(conf *environment.Environment) ports.MailerPort {
 }
 
 func (m *resendMailer) SendEmail(ctx context.Context, params ports.SendEmailParams) error {
-
 	emailParams := &resend.SendEmailRequest{
 		From:    params.From,
 		To:      []string{params.To},
@@ -38,12 +37,10 @@ func (m *resendMailer) SendEmail(ctx context.Context, params ports.SendEmailPara
 	}
 
 	_ = sent
-
 	return nil
 }
 
 func (m *resendMailer) GetEmailTemplate(ctx context.Context, templateName string) (string, error) {
-
 	if templateName == "otp" {
 		return `	
 		<html>

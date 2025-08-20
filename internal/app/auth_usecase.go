@@ -103,7 +103,7 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 	// Send email (this should be outside transaction)
 	body := strings.Replace(template, "{{.OTP}}", otp, 1)
 	err = uc.mailer.SendEmail(ctx, ports.SendEmailParams{
-		From:    "noreply@qq.com",
+		From:    "qq@homelab-kaleici.space",
 		To:      email,
 		Subject: "OTP Verification",
 		Body:    body,
