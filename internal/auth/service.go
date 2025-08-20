@@ -1,214 +1,75 @@
-package newauth
+package auth
 
 import (
 	"context"
 	"crypto/sha256"
-	"errors"
 	"strings"
 
-	"github.com/abdurrahimagca/qq-back/internal/environment"
-	resend_mail "github.com/abdurrahimagca/qq-back/internal/external/mail"
-	"github.com/abdurrahimagca/qq-back/internal/tokens"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Service arayüzü, auth domain'inin temel yeteneklerini tanımlar.
 type Service interface {
-	OtpLoginSignup(ctx context.Context, params LoginOtpParams) (LoginOtpResult, error)
-	VerifyOtpCode(ctx context.Context, params VerifyOtpCodeParams) (VerifyOtpCodeResult, error)
-	RefreshTokens(ctx context.Context, params RefreshTokensParams) (RefreshTokensResult, error)
-	ValidateAccessAndGetUser(ctx context.Context, params ValidateAccessAndGetUserParams) (ValidateAccessAndGetUserResult, error)
+	GenerateAndSaveOTP(ctx context.Context, tx pgx.Tx, userID uuid.UUID) (string, error)
+	VerifyOTP(ctx context.Context, tx pgx.Tx, email string, otpCode string) error
+	CreateNewAuthForOTPLogin(ctx context.Context, tx pgx.Tx, email string) (*uuid.UUID, error)
 }
 
 type service struct {
-	repo   Repository
-	db     *pgxpool.Pool
-	config *environment.Environment
-	tokens tokens.Service
+	repo Repository
 }
 
-func NewService(repo Repository, db *pgxpool.Pool, config *environment.Environment, tokens tokens.Service) Service {
-	return &service{
-		repo:   repo,
-		db:     db,
-		config: config,
-		tokens: tokens,
-	}
+func NewService(repo Repository) Service {
+	return &service{repo: repo}
 }
 
-func (s *service) InsertNewOtpCode(ctx context.Context, params InsertNewOtpCodeForUserParams) (InsertNewOtpCodeForUserResult, error) {
-	return s.repo.InsertNewOtpCodeForUser(ctx, params)
+func (s *service) CreateNewAuthForOTPLogin(ctx context.Context, tx pgx.Tx, email string) (*uuid.UUID, error) {
+	id, err := s.repo.CreateAuthForOTPLogin(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
 }
 
-func (s *service) handleUserExists(ctx context.Context, params LoginOtpParams, userID pgtype.UUID) (LoginOtpResult, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return LoginOtpResult{}, err
-	}
-	defer tx.Rollback(ctx)
+func (s *service) GenerateAndSaveOTP(ctx context.Context, tx pgx.Tx, userID uuid.UUID) (string, error) {
+	// Transaction'a bağlı bir repo al
+	txRepo := s.repo.WithTx(tx)
 
-	_, err = s.repo.DeleteOtpCodesByEmail(ctx, DeleteOtpCodesByEmailParams(params))
-	if err != nil {
-		return LoginOtpResult{}, err
+	// 1. İş Kuralı: Önce kullanıcının mevcut, geçerli tüm OTP'lerini sil.
+	if err := txRepo.KillOrphanedOTPsByUserID(ctx, pgtype.UUID{Bytes: userID, Valid: true}); err != nil { // repo'da böyle bir metot olmalı
+		return "", err
 	}
 
-	codePrefix := "QQ"
-	otpCode := strings.ToUpper(codePrefix + uuid.New().String()[:6])
-	otpHash := sha256.New().Sum([]byte(otpCode))
+	// 2. İş Kuralı: Yeni OTP kodunu ve hash'ini oluştur.
+	otpCode := strings.ToUpper("QQ" + uuid.NewString()[:6])
+	otpHash := sha256.Sum256([]byte(otpCode))
 
-	_, err = s.repo.InsertNewOtpCodeForUser(ctx, InsertNewOtpCodeForUserParams{
-		UserID: userID,
-		Code:   string(otpHash),
-	})
-	if err != nil {
-		return LoginOtpResult{}, err
+	// 3. Yeni OTP'yi DB'ye kaydet.
+	if err := txRepo.CreateOTP(ctx, userID, string(otpHash[:])); err != nil {
+		return "", err
 	}
 
-	err = resend_mail.SendOTPMail(ctx, resend_mail.SendOTPMailParams{
-		To:     params.Email,
-		Code:   otpCode,
-		Config: s.config,
-	})
-	if err != nil {
-		return LoginOtpResult{}, err
-	}
-	tx.Commit(ctx)
-
-	return LoginOtpResult{
-		UserID: &userID,
-	}, nil
-}
-func (s *service) handleUserNotFound(ctx context.Context, params LoginOtpParams) (LoginOtpResult, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return LoginOtpResult{}, err
-	}
-	defer tx.Rollback(ctx)
-
-	codePrefix := "QQ"
-	otpCode := strings.ToUpper(codePrefix + uuid.New().String()[:6])
-	otpHash := sha256.New().Sum([]byte(otpCode))
-	username := "user_" + uuid.New().String()[:10]
-
-	result, err := s.repo.CreateNewUserOtp(ctx, tx, CreateNewUserOtpParams{
-		Email:    params.Email,
-		Username: username,
-		OtpCode:  string(otpHash),
-	})
-
-	if err != nil {
-		return LoginOtpResult{}, err
-	}
-
-	err = resend_mail.SendOTPMail(ctx, resend_mail.SendOTPMailParams{
-		To:     params.Email,
-		Code:   otpCode,
-		Config: s.config,
-	})
-	if err != nil {
-		return LoginOtpResult{}, err
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return LoginOtpResult{}, err
-	}
-
-	return LoginOtpResult{
-		UserID: result.UserID,
-	}, nil
+	// Ham kodu (hash'lenmemiş) geri dön, çünkü bu e-posta ile gönderilecek.
+	return otpCode, nil
 }
 
-func (s *service) OtpLoginSignup(ctx context.Context, params LoginOtpParams) (LoginOtpResult, error) {
-	user, err := s.repo.GetUserByEmail(ctx, GetUserByEmailParams(params))
-	if err != nil || !user.User.ID.Valid {
-		return s.handleUserNotFound(ctx, params)
-	}
-	return s.handleUserExists(ctx, params, user.User.ID)
-}
+func (s *service) VerifyOTP(ctx context.Context, tx pgx.Tx, email string, otpCode string) error {
+	txRepo := s.repo.WithTx(tx)
 
-func (s *service) VerifyOtpCode(ctx context.Context, params VerifyOtpCodeParams) (VerifyOtpCodeResult, error) {
-	tx, err := s.db.Begin(ctx)
+	// İş Kuralı: Gelen kodu hash'le ve DB'deki ile karşılaştır.
+	otpHash := sha256.Sum256([]byte(otpCode))
+	usr, err := txRepo.GetUserIdAndEmailByOtpCode(ctx, string(otpHash[:]))
 	if err != nil {
-		return VerifyOtpCodeResult{}, err
+		return err
 	}
-	defer tx.Rollback(ctx)
+	if usr.Email != email {
+		return ErrInvalidOtpCode
+	}
+	if err := txRepo.KillOrphanedOTPs(ctx, usr.Email); err != nil {
+		return err
+	}
+	return nil
 
-	result, err := s.repo.GetUserIdAndEmailByOtpCodeAndDelete(tx, ctx, GetUserIdAndEmailByOtpCodeParams{
-		OtpCode: params.Code,
-	})
-	if err != nil {
-		return VerifyOtpCodeResult{}, err
-	}
-	if result.UserID == nil {
-		return VerifyOtpCodeResult{}, errors.New("invalid otp code")
-	}
-	tokens, err := s.tokens.GenerateTokens(tokens.GenerateTokenParams{
-		UserID: result.UserID.String(),
-	})
-	if err != nil {
-		return VerifyOtpCodeResult{}, err
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return VerifyOtpCodeResult{}, err
-	}
-
-	return VerifyOtpCodeResult{
-		Tokens: tokens.Tokens,
-	}, nil
-}
-
-func (s *service) RefreshTokens(ctx context.Context, params RefreshTokensParams) (RefreshTokensResult, error) {
-	claims, err := s.tokens.ValidateToken(tokens.ValidateTokenParams{
-		Token: params.RefreshToken,
-	})
-	if err != nil {
-		return RefreshTokensResult{}, err
-	}
-	userID, err := uuid.Parse(claims.Claims.UserID)
-	if err != nil {
-		return RefreshTokensResult{}, err
-	}
-	user, err := s.repo.GetUserByID(ctx, GetUserByIDParams{
-		ID: pgtype.UUID{
-			Bytes: userID,
-			Valid: true,
-		},
-	})
-	if err != nil || !user.User.ID.Valid {
-		return RefreshTokensResult{}, err
-	}
-	tokens, err := s.tokens.GenerateTokens(tokens.GenerateTokenParams{
-		UserID: user.User.ID.String(),
-	})
-	if err != nil {
-		return RefreshTokensResult{}, err
-	}
-	return RefreshTokensResult{
-		Tokens: tokens.Tokens,
-	}, nil
-}
-
-func (s *service) ValidateAccessAndGetUser(ctx context.Context, params ValidateAccessAndGetUserParams) (ValidateAccessAndGetUserResult, error) {
-	claims, err := s.tokens.ValidateToken(tokens.ValidateTokenParams{
-		Token: params.AccessToken,
-	})
-	if err != nil {
-		return ValidateAccessAndGetUserResult{}, err
-	}
-	user, err := s.repo.GetUserByID(ctx, GetUserByIDParams{
-		ID: pgtype.UUID{
-			Bytes: uuid.MustParse(claims.Claims.UserID),
-			Valid: true,
-		},
-	})
-	if err != nil || !user.User.ID.Valid {
-		return ValidateAccessAndGetUserResult{}, err
-	}
-	return ValidateAccessAndGetUserResult{
-		User: &user.User,
-	}, nil
 }

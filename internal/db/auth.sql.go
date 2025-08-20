@@ -20,15 +20,22 @@ func (q *Queries) DeleteOtpCodeEntryByAuthID(ctx context.Context, authID pgtype.
 	return err
 }
 
-const deleteOtpCodesByEmail = `-- name: DeleteOtpCodesByEmail :one
-DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = $1) RETURNING COUNT(*)
+const deleteOtpCodesByEmail = `-- name: DeleteOtpCodesByEmail :exec
+DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = $1)
 `
 
-func (q *Queries) DeleteOtpCodesByEmail(ctx context.Context, email string) (int64, error) {
-	row := q.db.QueryRow(ctx, deleteOtpCodesByEmail, email)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+func (q *Queries) DeleteOtpCodesByEmail(ctx context.Context, email string) error {
+	_, err := q.db.Exec(ctx, deleteOtpCodesByEmail, email)
+	return err
+}
+
+const deleteOtpCodesByUserID = `-- name: DeleteOtpCodesByUserID :exec
+DELETE FROM auth_otp_codes WHERE auth_id = (SELECT u.auth_id FROM users u WHERE u.id = $1)
+`
+
+func (q *Queries) DeleteOtpCodesByUserID(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteOtpCodesByUserID, userID)
+	return err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
@@ -133,7 +140,7 @@ func (q *Queries) InsertAuthOtpCode(ctx context.Context, arg InsertAuthOtpCodePa
 const insertUser = `-- name: InsertUser :one
 INSERT INTO users (auth_id, username, display_name, avatar_key)
 VALUES ($1, $2, $3, $4)
-RETURNING id
+RETURNING id, privacy_level, auth_id, username, display_name, created_at, updated_at, avatar_key
 `
 
 type InsertUserParams struct {
@@ -143,16 +150,25 @@ type InsertUserParams struct {
 	AvatarKey   pgtype.Text `json:"avatarKey"`
 }
 
-func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (pgtype.UUID, error) {
+func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, insertUser,
 		arg.AuthID,
 		arg.Username,
 		arg.DisplayName,
 		arg.AvatarKey,
 	)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.PrivacyLevel,
+		&i.AuthID,
+		&i.Username,
+		&i.DisplayName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AvatarKey,
+	)
+	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one

@@ -6,7 +6,7 @@ RETURNING id;
 -- name: InsertUser :one
 INSERT INTO users (auth_id, username, display_name, avatar_key)
 VALUES (sqlc.arg(auth_id), sqlc.arg(username), sqlc.narg(display_name), sqlc.narg(avatar_key))
-RETURNING id;
+RETURNING *;
 
 -- name: InsertAuthOtpCode :one
 INSERT INTO auth_otp_codes (auth_id, code)
@@ -39,5 +39,8 @@ SELECT * FROM users WHERE id = sqlc.arg(id) LIMIT 1;
 -- name: DeleteOtpCodeEntryByAuthID :exec
 DELETE FROM auth_otp_codes WHERE auth_id = sqlc.arg(auth_id);
 
--- name: DeleteOtpCodesByEmail :one
-DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email)) RETURNING COUNT(*);
+-- name: DeleteOtpCodesByUserID :exec
+DELETE FROM auth_otp_codes WHERE auth_id = (SELECT u.auth_id FROM users u WHERE u.id = sqlc.arg(user_id));
+
+-- name: DeleteOtpCodesByEmail :exec
+DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email));

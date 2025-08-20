@@ -1,21 +1,26 @@
-package newauth
+package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/abdurrahimagca/qq-back/internal/db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Repository interface {
-	CreateNewUserOtp(ctx context.Context, tx pgx.Tx, params CreateNewUserOtpParams) (CreateNewUserResult, error)
-	GetUserByEmail(ctx context.Context, params GetUserByEmailParams) (GetUserByEmailResult, error)
-	InsertNewOtpCodeForUser(ctx context.Context, params InsertNewOtpCodeForUserParams) (InsertNewOtpCodeForUserResult, error)
-	DeleteOtpCodesByEmail(ctx context.Context, params DeleteOtpCodesByEmailParams) (DeleteOtpCodesByEmailResult, error)
-	GetUserIdAndEmailByOtpCodeAndDelete(tx pgx.Tx, ctx context.Context, params GetUserIdAndEmailByOtpCodeParams) (GetUserIdAndEmailByOtpCodeResult, error)
-	GetUserByID(ctx context.Context, params GetUserByIDParams) (GetUserByIDResult, error)
+	WithTx(tx pgx.Tx) Repository
+	CreateAuthForOTPLogin(ctx context.Context, email string) (uuid.UUID, error)
+	CreateOTP(ctx context.Context, userID uuid.UUID, otpHash string) error
+	GetUserIdAndEmailByOtpCode(ctx context.Context, otpHash string) (GetUserIdAndEmailByOtpCodeResult, error)
+	KillOrphanedOTPs(ctx context.Context, email string) error
+	KillOrphanedOTPsByUserID(ctx context.Context, userID pgtype.UUID) error
 }
+
 type pgxRepository struct {
 	q *db.Queries
 }
@@ -26,100 +31,60 @@ func NewPgxRepository(pool *pgxpool.Pool) Repository {
 	}
 }
 
-func (r *pgxRepository) CreateNewUserOtp(ctx context.Context, tx pgx.Tx, params CreateNewUserOtpParams) (CreateNewUserResult, error) {
-	queries := db.New(tx)
-
-	authId, err := queries.InsertAuth(ctx, db.InsertAuthParams{
-		Email:    params.Email,
-		Provider: db.AuthProviderEmailOtp,
-	})
-	if err != nil {
-		return CreateNewUserResult{}, err
+func (r *pgxRepository) WithTx(tx pgx.Tx) Repository {
+	return &pgxRepository{
+		q: r.q.WithTx(tx),
 	}
-
-	userID, err := queries.InsertUser(ctx, db.InsertUserParams{
-		AuthID:   authId,
-		Username: params.Username,
-	})
-	if err != nil {
-		return CreateNewUserResult{}, err
-	}
-
-	otpCode, err := queries.InsertAuthOtpCode(ctx, db.InsertAuthOtpCodeParams{
-		AuthID: authId,
-		Code:   params.OtpCode,
-	})
-	if err != nil {
-		return CreateNewUserResult{}, err
-	}
-
-	return CreateNewUserResult{
-		UserID:    &userID,
-		OtpCodeID: &otpCode,
-	}, nil
 }
 
-func (r *pgxRepository) InsertNewOtpCodeForUser(ctx context.Context, params InsertNewOtpCodeForUserParams) (InsertNewOtpCodeForUserResult, error) {
-	otpCode, err := r.q.InsertAuthOtpCode(ctx, db.InsertAuthOtpCodeParams{
-		AuthID: params.UserID,
-		Code:   params.Code,
+func (r *pgxRepository) CreateAuthForOTPLogin(ctx context.Context, email string) (uuid.UUID, error) {
+	id, err := r.q.InsertAuth(ctx, db.InsertAuthParams{
+		Email:    email,
+		Provider: "email_otp",
 	})
 	if err != nil {
-		return InsertNewOtpCodeForUserResult{}, err
+		return uuid.UUID{}, fmt.Errorf("CreateOtpAuth failed: %w", err)
 	}
-
-	return InsertNewOtpCodeForUserResult{
-		OtpCodeID: &otpCode,
-	}, nil
+	return uuid.UUID(id.Bytes), nil
 }
-func (r *pgxRepository) DeleteOtpCodesByEmail(ctx context.Context, params DeleteOtpCodesByEmailParams) (DeleteOtpCodesByEmailResult, error) {
-	deletedCount, err := r.q.DeleteOtpCodesByEmail(ctx, params.Email)
-	if err != nil {
-		return DeleteOtpCodesByEmailResult{}, err
-	}
 
-	return DeleteOtpCodesByEmailResult{
-		DeletedCount: deletedCount,
-	}, nil
+func (r *pgxRepository) CreateOTP(ctx context.Context, userID uuid.UUID, otpHash string) error {
+	_, err := r.q.InsertAuthOtpCode(ctx, db.InsertAuthOtpCodeParams{
+		AuthID: pgtype.UUID{Bytes: userID, Valid: true},
+		Code:   otpHash,
+	})
+	if err != nil {
+		return fmt.Errorf("CreateOTP failed: %w", err)
+	}
+	return nil
 }
-func (r *pgxRepository) GetUserByEmail(ctx context.Context, params GetUserByEmailParams) (GetUserByEmailResult, error) {
 
-	user, err := r.q.GetUserByEmail(ctx, params.Email)
+func (r *pgxRepository) GetUserIdAndEmailByOtpCode(ctx context.Context, otpHash string) (GetUserIdAndEmailByOtpCodeResult, error) {
+	row, err := r.q.GetUserIdAndEmailByOtpCode(ctx, otpHash)
 	if err != nil {
-		return GetUserByEmailResult{}, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return GetUserIdAndEmailByOtpCodeResult{}, ErrNotFound
+		}
+		return GetUserIdAndEmailByOtpCodeResult{}, fmt.Errorf("GetUserIdAndEmailByOtpCode failed: %w", err)
 	}
-
-	return GetUserByEmailResult{
-		User:  user,
-		Email: params.Email,
-	}, nil
-}
-func (r *pgxRepository) GetUserIdAndEmailByOtpCodeAndDelete(tx pgx.Tx, ctx context.Context, params GetUserIdAndEmailByOtpCodeParams) (GetUserIdAndEmailByOtpCodeResult, error) {
-	queries := db.New(tx)
-	row, err := queries.GetUserIdAndEmailByOtpCode(ctx, params.OtpCode)
-
-	if err != nil {
-		return GetUserIdAndEmailByOtpCodeResult{}, err
-	}
-	_, err = queries.DeleteOtpCodesByEmail(ctx, row.Email)
-	if err != nil {
-		return GetUserIdAndEmailByOtpCodeResult{}, err
-	}
-
 	return GetUserIdAndEmailByOtpCodeResult{
-		UserID: &row.ID,
-		Email:  row.Email,
+		ID:    uuid.UUID(row.ID.Bytes),
+		Email: row.Email,
 	}, nil
-
 }
 
-func (r *pgxRepository) GetUserByID(ctx context.Context, params GetUserByIDParams) (GetUserByIDResult, error) {
-	user, err := r.q.GetUserByID(ctx, params.ID)
+func (r *pgxRepository) KillOrphanedOTPs(ctx context.Context, email string) error {
+	 err := r.q.DeleteOtpCodesByEmail(ctx, email)
 	if err != nil {
-		return GetUserByIDResult{}, err
+		return fmt.Errorf("KillOrphanedOTPs failed: %w", err)
 	}
-	return GetUserByIDResult{
-		User: user,
-	}, nil
+	return nil
 }
 
+func (r *pgxRepository) KillOrphanedOTPsByUserID(ctx context.Context, userID pgtype.UUID) error {
+	err := r.q.DeleteOtpCodesByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("DeleteOtpCodesByUserID failed: %w", err)
+	}
+	return nil
+}
