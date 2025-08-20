@@ -5,9 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/abdurrahimagca/qq-back/internal/api"
-	"github.com/abdurrahimagca/qq-back/internal/config/environment"
-	"github.com/abdurrahimagca/qq-back/internal/handler"
+	"github.com/abdurrahimagca/qq-back/internal/environment"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -29,10 +27,10 @@ func main() {
 	defer pool.Close()
 
 	// Initialize the API handler which embeds all other handlers
-	apiHandler := handler.NewApiHandler(pool, config)
+	//apiHandler := handler.NewApiHandler(pool, config)
 
 	// Create a strict handler that ENFORCES type safety!
-	strictHandler := api.NewStrictHandler(apiHandler, nil)
+	//strictHandler := api.NewStrictHandler(apiHandler, nil)
 
 	// Create a new ServeMux
 	mux := http.NewServeMux()
@@ -41,7 +39,7 @@ func main() {
 	// This automatically handles the routing based on the OpenAPI spec
 	// Base URL matches the server URL in openapi.yml: /api/v1.1
 	// This function registers routes directly on our mux
-	api.HandlerFromMuxWithBaseURL(strictHandler, mux, "/api/v1.1")
+	//api.HandlerFromMuxWithBaseURL(strictHandler, mux, "/api/v1.1")
 
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./cmd/_docs.html")
@@ -59,8 +57,5 @@ func main() {
 
 	log.Println("Server is running on port 3003")
 	log.Println("API Documentation available at: http://localhost:3003/docs")
-	log.Println("API endpoints:")
-	log.Println("  POST /api/v1.1/auth/otp")
-	log.Println("  POST /api/v1.1/auth/otp-verify")
 	log.Fatal(http.ListenAndServe(":3003", mux))
 }

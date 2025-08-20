@@ -8,18 +8,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type ResendConfig struct {
+type ResendEnvironment struct {
 	Url string
 	Key string
 }
-type TokenConfig struct {
+type TokenEnvironment struct {
 	Secret                 string
 	AccessTokenExpireTime  int
 	RefreshTokenExpireTime int
 	Issuer                 string
 	Audience               string
 }
-type R2Config struct {
+type R2Environment struct {
 	BucketName      string
 	URL             string
 	TokenValue      string
@@ -28,15 +28,15 @@ type R2Config struct {
 	AccountID       string
 }
 
-type Config struct {
+type Environment struct {
 	APIKey      string
-	Resend      ResendConfig
+	Resend      ResendEnvironment
 	DatabaseURL string
-	Token       TokenConfig
-	R2          R2Config
+	Token       TokenEnvironment
+	R2          R2Environment
 }
 
-func Load() (*Config, error) {
+func Load() (*Environment, error) {
 	env := os.Getenv("ENV")
 	if env == "" {
 		env = "development"
@@ -55,21 +55,21 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("error converting REFRESH_TOKEN_EXPIRE_TIME to int: %w", err)
 	}
 
-	return &Config{
+	return &Environment{
 		APIKey: os.Getenv("API_KEY"),
-		Resend: ResendConfig{
+		Resend: ResendEnvironment{
 			Url: os.Getenv("RESEND_URL"),
 			Key: os.Getenv("RESEND_KEY"),
 		},
 		DatabaseURL: os.Getenv("DATABASE_URL"),
-		Token: TokenConfig{
+		Token: TokenEnvironment{
 			Secret:                 os.Getenv("TOKEN_SECRET"),
 			AccessTokenExpireTime:  accessTokenExpireTime,
 			RefreshTokenExpireTime: refreshTokenExpireTime,
 			Issuer:                 os.Getenv("ISSUER"),
 			Audience:               os.Getenv("AUDIENCE"),
 		},
-		R2: R2Config{
+		R2: R2Environment{
 			BucketName:      os.Getenv("R2_BUCKET_NAME"),
 			URL:             os.Getenv("R2_URL"),
 			TokenValue:      os.Getenv("R2_TOKEN_VALUE"),

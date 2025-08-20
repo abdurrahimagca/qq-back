@@ -1,17 +1,17 @@
-package mail
+package resend_mail
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/abdurrahimagca/qq-back/internal/config/environment"
+	"github.com/abdurrahimagca/qq-back/internal/environment"
 	"github.com/resend/resend-go/v2"
 )
 
 type SendOTPMailParams struct {
 	To     string
 	Code   string
-	Config *environment.Config
+	Config *environment.Environment
 }
 
 func SendOTPMail(ctx context.Context, params SendOTPMailParams) error {

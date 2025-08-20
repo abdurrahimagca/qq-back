@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/abdurrahimagca/qq-back/internal/config/environment"
 	"github.com/abdurrahimagca/qq-back/internal/db"
+	"github.com/abdurrahimagca/qq-back/internal/environment"
 	"github.com/abdurrahimagca/qq-back/internal/external/bucket"
 	userRepository "github.com/abdurrahimagca/qq-back/internal/repository/user"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,11 +14,11 @@ import (
 
 type UserService struct {
 	db       *pgxpool.Pool
-	config   *environment.Config
+	config   *environment.Environment
 	userRepo *userRepository.UserRepository
 }
 
-func NewUserService(db *pgxpool.Pool, config *environment.Config) *UserService {
+func NewUserService(db *pgxpool.Pool, config *environment.Environment) *UserService {
 	return &UserService{
 		db:       db,
 		config:   config,

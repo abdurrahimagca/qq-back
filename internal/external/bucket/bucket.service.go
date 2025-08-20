@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/abdurrahimagca/qq-back/internal/config/environment"
+	"github.com/abdurrahimagca/qq-back/internal/environment"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -17,16 +17,16 @@ import (
 )
 
 type UploadImageResult struct {
-	Key *string
+	Key       *string
 	isSuccess bool
 }
 
 type Service struct {
 	client *s3.Client
-	config environment.R2Config
+	config environment.R2Environment
 }
 
-func NewService(cfg environment.R2Config) (*Service, error) {
+func NewService(cfg environment.R2Environment) (*Service, error) {
 	accessKeyId := cfg.AccessKeyID
 	accessKeySecret := cfg.SecretAccessKey
 	accountId := cfg.AccountID
@@ -43,8 +43,6 @@ func NewService(cfg environment.R2Config) (*Service, error) {
 		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
 	})
 
-	
-
 	return &Service{
 		client: client,
 		config: cfg,
@@ -53,7 +51,7 @@ func NewService(cfg environment.R2Config) (*Service, error) {
 
 func (s *Service) UploadImage(file io.Reader, uploadImagePublic bool) (UploadImageResult, error) {
 	totalStart := time.Now()
-	
+
 	processedImage, err := ProcessSingleImage(file)
 	if err != nil {
 		return UploadImageResult{}, err
@@ -75,14 +73,13 @@ func (s *Service) UploadImage(file io.Reader, uploadImagePublic bool) (UploadIma
 		return UploadImageResult{}, err
 	}
 
-
 	log.Printf("Total upload time: %v", time.Since(uploadStart))
-	
+
 	uploadResult := UploadImageResult{
-		Key:    &key, // Use Medium field for single image
+		Key:       &key, // Use Medium field for single image
 		isSuccess: true,
 	}
-	
+
 	log.Printf("Total operation time: %v", time.Since(totalStart))
 	return uploadResult, nil
 }
