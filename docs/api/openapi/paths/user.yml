@@ -71,3 +71,92 @@ read_avatar_signed_url:
           application/json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+update_profile:
+  tags:
+    - User
+  post:
+    summary: Update user profile
+    description: Update user profile
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/user.yml#/components/schemas/PartialUser'
+    responses:
+      '200':
+        description: User profile updated
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+                - $ref: '../components/user.yml#/components/schemas/User'
+      '401':
+        description: Unauthorized, please check your access token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+username_available:
+  tags:
+    - User
+  post:
+    summary: Check if username is available
+    description: Check if username is available
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+                description: Username to check
+                example: 'john_doe'
+                pattern: '^[a-zA-Z0-9_-]+$'
+                minLength: 3
+                maxLength: 512
+                nullable: false
+    responses:
+      '200':
+        description: Username is available
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+      '401':
+        description: Unauthorized, please check your access token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+      '422':
+        description: Unprocessable entity, username is used by another user
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'

@@ -5,11 +5,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT token for authentication
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-KEY
-      description: API key for service authentication
     
   responses:
     UnauthorizedError:

@@ -6,6 +6,7 @@ import (
 
 	"github.com/abdurrahimagca/qq-back/internal/api"
 	"github.com/abdurrahimagca/qq-back/internal/middleware"
+	"github.com/abdurrahimagca/qq-back/internal/user"
 )
 
 func (s *Server) GetMeProfile(ctx context.Context, request api.GetMeProfileRequestObject) (api.GetMeProfileResponseObject, error) {
@@ -57,11 +58,75 @@ func (s *Server) GetMeAvatar(ctx context.Context, request api.GetMeAvatarRequest
 
 	expiresInSeconds := int(30 * 24 * time.Hour / time.Second)
 	return api.GetMeAvatar200JSONResponse{
-		
+
 		Message:   "Avatar signed url fetched successfully",
 		SignedUrl: avatarSignedUrl,
 		ExpiresIn: &expiresInSeconds,
 		Success:   true,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}, nil
+}
+func (s *Server) PostMeUpdateProfile(ctx context.Context, request api.PostMeUpdateProfileRequestObject) (api.PostMeUpdateProfileResponseObject, error) {
+	ctxUser := middleware.MustGetUserFromContext(ctx)
+
+	if ctxUser == nil {
+		return api.PostMeUpdateProfile401JSONResponse{}, nil
+	}
+
+	var privacyLevel *user.PrivacyLevel
+	if request.Body != nil && request.Body.PrivacyLevel != nil {
+		pl := user.PrivacyLevel(*request.Body.PrivacyLevel)
+		privacyLevel = &pl
+	}
+
+	updatedUser, err := s.userService.UpdateUser(ctx, user.PartialUser{
+		ID:           ctxUser.ID,
+		DisplayName:  request.Body.DisplayName,
+		PrivacyLevel: privacyLevel,
+		Username:     request.Body.Username,
+	})
+	if err != nil {
+		return api.PostMeUpdateProfile500JSONResponse{
+			Message:   "Failed to update profile: " + err.Error(),
+			Success:   false,
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		}, nil
+	}
+
+	return api.PostMeUpdateProfile200JSONResponse{
+		Message:      "Profile updated successfully",
+		Success:      true,
+		Timestamp:    time.Now().UTC().Format(time.RFC3339),
+		Username:     stringPtr(updatedUser.Username),
+		DisplayName:  updatedUser.DisplayName,
+		PrivacyLevel: stringPtr(string(updatedUser.PrivacyLevel)),
+	}, nil
+}
+func (s *Server) PostUserUsernameAvailable(ctx context.Context, request api.PostUserUsernameAvailableRequestObject) (api.PostUserUsernameAvailableResponseObject, error) {
+	user := middleware.MustGetUserFromContext(ctx)
+
+	if user == nil {
+		return api.PostUserUsernameAvailable401JSONResponse{}, nil
+	}
+
+	available, err := s.userService.UserNameAvailable(ctx, *request.Body.Username)
+	if err != nil {
+		return api.PostUserUsernameAvailable500JSONResponse{
+			Message:   "Failed to check username availability: " + err.Error(),
+			Success:   false,
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		}, nil
+	}
+	if available {
+		return api.PostUserUsernameAvailable200JSONResponse{
+			Message:   "Username available",
+			Success:   true,
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		}, nil
+	}
+	return api.PostUserUsernameAvailable422JSONResponse{
+		Message:   "Username already exists",
+		Success:   false,
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}, nil
 }

@@ -13,7 +13,35 @@ components:
           nullable: false
           description: Username of the user
           example: 'john_doe' 
+          pattern: '^[a-zA-Z0-9_-]+$'
+          minLength: 3
+          maxLength: 512
         privacyLevel:
           type: string
           description: Privacy level of the user, public, private, full_private
           example: public
+    PartialUser:
+      type: object
+      properties:
+        displayName:
+          type: string
+          nullable: true
+          description: Display name of the user
+          example: 'John Doe'
+        username:
+          type: string
+          nullable: true
+          description: Username of the user
+          example: 'john_doe'
+          pattern: '^[a-zA-Z0-9_-]+$'
+          minLength: 3
+          maxLength: 512
+        privacyLevel:
+          type: string
+          nullable: true
+          description: Privacy level of the user, public, private, full_private
+          example: public
+          enum:
+            - public
+            - private
+            - full_private

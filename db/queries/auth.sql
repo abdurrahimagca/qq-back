@@ -45,3 +45,6 @@ DELETE FROM auth_otp_codes WHERE auth_id = (SELECT u.auth_id FROM users u WHERE 
 
 -- name: DeleteOtpCodesByEmail :exec
 DELETE FROM auth_otp_codes WHERE auth_id = (SELECT id FROM auth WHERE email = sqlc.arg(email));
+
+-- name: UserNameExists :one
+SELECT COUNT(*) FROM users WHERE username = sqlc.arg(username) LIMIT 1;

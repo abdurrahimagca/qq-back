@@ -33,7 +33,7 @@ func main() {
 		log.Fatal("Error creating unified server", err)
 	}
 
-	log.Println("Server is running on port 3003")
+	log.Println("Server is running on pot 3003")
 	log.Println("API Documentation available at: http://localhost:3003/docs")
 	log.Fatal(http.ListenAndServe(":3003", handler))
 }

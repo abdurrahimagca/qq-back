@@ -22,6 +22,13 @@ const (
 	BearerAuthScopes = "BearerAuth.Scopes"
 )
 
+// Defines values for PostMeUpdateProfileJSONBodyPrivacyLevel.
+const (
+	FullPrivate PostMeUpdateProfileJSONBodyPrivacyLevel = "full_private"
+	Private     PostMeUpdateProfileJSONBodyPrivacyLevel = "private"
+	Public      PostMeUpdateProfileJSONBodyPrivacyLevel = "public"
+)
+
 // PostAuthOtpJSONBody defines parameters for PostAuthOtp.
 type PostAuthOtpJSONBody struct {
 	// Email Email address of the user
@@ -43,6 +50,27 @@ type PostAuthRefreshTokenJSONBody struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+// PostMeUpdateProfileJSONBody defines parameters for PostMeUpdateProfile.
+type PostMeUpdateProfileJSONBody struct {
+	// DisplayName Display name of the user
+	DisplayName *string `json:"displayName"`
+
+	// PrivacyLevel Privacy level of the user, public, private, full_private
+	PrivacyLevel *PostMeUpdateProfileJSONBodyPrivacyLevel `json:"privacyLevel"`
+
+	// Username Username of the user
+	Username *string `json:"username"`
+}
+
+// PostMeUpdateProfileJSONBodyPrivacyLevel defines parameters for PostMeUpdateProfile.
+type PostMeUpdateProfileJSONBodyPrivacyLevel string
+
+// PostUserUsernameAvailableJSONBody defines parameters for PostUserUsernameAvailable.
+type PostUserUsernameAvailableJSONBody struct {
+	// Username Username to check
+	Username *string `json:"username,omitempty"`
+}
+
 // PostAuthOtpJSONRequestBody defines body for PostAuthOtp for application/json ContentType.
 type PostAuthOtpJSONRequestBody PostAuthOtpJSONBody
 
@@ -51,6 +79,12 @@ type PostAuthOtpVerifyJSONRequestBody PostAuthOtpVerifyJSONBody
 
 // PostAuthRefreshTokenJSONRequestBody defines body for PostAuthRefreshToken for application/json ContentType.
 type PostAuthRefreshTokenJSONRequestBody PostAuthRefreshTokenJSONBody
+
+// PostMeUpdateProfileJSONRequestBody defines body for PostMeUpdateProfile for application/json ContentType.
+type PostMeUpdateProfileJSONRequestBody PostMeUpdateProfileJSONBody
+
+// PostUserUsernameAvailableJSONRequestBody defines body for PostUserUsernameAvailable for application/json ContentType.
+type PostUserUsernameAvailableJSONRequestBody PostUserUsernameAvailableJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -145,6 +179,16 @@ type ClientInterface interface {
 
 	// GetMeProfile request
 	GetMeProfile(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostMeUpdateProfileWithBody request with any body
+	PostMeUpdateProfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostMeUpdateProfile(ctx context.Context, body PostMeUpdateProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostUserUsernameAvailableWithBody request with any body
+	PostUserUsernameAvailableWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostUserUsernameAvailable(ctx context.Context, body PostUserUsernameAvailableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) PostAuthOtpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -233,6 +277,54 @@ func (c *Client) GetMeAvatar(ctx context.Context, reqEditors ...RequestEditorFn)
 
 func (c *Client) GetMeProfile(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetMeProfileRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostMeUpdateProfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostMeUpdateProfileRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostMeUpdateProfile(ctx context.Context, body PostMeUpdateProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostMeUpdateProfileRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostUserUsernameAvailableWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostUserUsernameAvailableRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostUserUsernameAvailable(ctx context.Context, body PostUserUsernameAvailableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostUserUsernameAvailableRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -417,6 +509,86 @@ func NewGetMeProfileRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewPostMeUpdateProfileRequest calls the generic PostMeUpdateProfile builder with application/json body
+func NewPostMeUpdateProfileRequest(server string, body PostMeUpdateProfileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostMeUpdateProfileRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostMeUpdateProfileRequestWithBody generates requests for PostMeUpdateProfile with any type of body
+func NewPostMeUpdateProfileRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/me/update-profile")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostUserUsernameAvailableRequest calls the generic PostUserUsernameAvailable builder with application/json body
+func NewPostUserUsernameAvailableRequest(server string, body PostUserUsernameAvailableJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostUserUsernameAvailableRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostUserUsernameAvailableRequestWithBody generates requests for PostUserUsernameAvailable with any type of body
+func NewPostUserUsernameAvailableRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/username-available")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -480,6 +652,16 @@ type ClientWithResponsesInterface interface {
 
 	// GetMeProfileWithResponse request
 	GetMeProfileWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetMeProfileResponse, error)
+
+	// PostMeUpdateProfileWithBodyWithResponse request with any body
+	PostMeUpdateProfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMeUpdateProfileResponse, error)
+
+	PostMeUpdateProfileWithResponse(ctx context.Context, body PostMeUpdateProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*PostMeUpdateProfileResponse, error)
+
+	// PostUserUsernameAvailableWithBodyWithResponse request with any body
+	PostUserUsernameAvailableWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostUserUsernameAvailableResponse, error)
+
+	PostUserUsernameAvailableWithResponse(ctx context.Context, body PostUserUsernameAvailableJSONRequestBody, reqEditors ...RequestEditorFn) (*PostUserUsernameAvailableResponse, error)
 }
 
 type PostAuthOtpResponse struct {
@@ -812,6 +994,149 @@ func (r GetMeProfileResponse) StatusCode() int {
 	return 0
 }
 
+type PostMeUpdateProfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data Data returned by the API call
+		Data *map[string]interface{} `json:"data,omitempty"`
+
+		// DisplayName Display name of the user
+		DisplayName *string `json:"displayName"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// PrivacyLevel Privacy level of the user, public, private, full_private
+		PrivacyLevel *string `json:"privacyLevel,omitempty"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+
+		// Username Username of the user
+		Username *string `json:"username,omitempty"`
+	}
+	JSON400 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+	JSON401 *struct {
+		// Message Message from the API call
+		Message *string `json:"message"`
+
+		// Timestamp Timestamp of the response
+		Timestamp *string `json:"timestamp"`
+	}
+	JSON500 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostMeUpdateProfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostMeUpdateProfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostUserUsernameAvailableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data Data returned by the API call
+		Data *map[string]interface{} `json:"data,omitempty"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+	JSON401 *struct {
+		// Message Message from the API call
+		Message *string `json:"message"`
+
+		// Timestamp Timestamp of the response
+		Timestamp *string `json:"timestamp"`
+	}
+	JSON422 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+	JSON500 *struct {
+		// ErrorCode Error code
+		ErrorCode string `json:"errorCode"`
+
+		// Message Message from the API call
+		Message string `json:"message"`
+
+		// Success Success status of the API call
+		Success bool `json:"success"`
+
+		// Timestamp Timestamp of the response
+		Timestamp string `json:"timestamp"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostUserUsernameAvailableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostUserUsernameAvailableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // PostAuthOtpWithBodyWithResponse request with arbitrary body returning *PostAuthOtpResponse
 func (c *ClientWithResponses) PostAuthOtpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAuthOtpResponse, error) {
 	rsp, err := c.PostAuthOtpWithBody(ctx, contentType, body, reqEditors...)
@@ -879,6 +1204,40 @@ func (c *ClientWithResponses) GetMeProfileWithResponse(ctx context.Context, reqE
 		return nil, err
 	}
 	return ParseGetMeProfileResponse(rsp)
+}
+
+// PostMeUpdateProfileWithBodyWithResponse request with arbitrary body returning *PostMeUpdateProfileResponse
+func (c *ClientWithResponses) PostMeUpdateProfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostMeUpdateProfileResponse, error) {
+	rsp, err := c.PostMeUpdateProfileWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostMeUpdateProfileResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostMeUpdateProfileWithResponse(ctx context.Context, body PostMeUpdateProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*PostMeUpdateProfileResponse, error) {
+	rsp, err := c.PostMeUpdateProfile(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostMeUpdateProfileResponse(rsp)
+}
+
+// PostUserUsernameAvailableWithBodyWithResponse request with arbitrary body returning *PostUserUsernameAvailableResponse
+func (c *ClientWithResponses) PostUserUsernameAvailableWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostUserUsernameAvailableResponse, error) {
+	rsp, err := c.PostUserUsernameAvailableWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostUserUsernameAvailableResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostUserUsernameAvailableWithResponse(ctx context.Context, body PostUserUsernameAvailableJSONRequestBody, reqEditors ...RequestEditorFn) (*PostUserUsernameAvailableResponse, error) {
+	rsp, err := c.PostUserUsernameAvailable(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostUserUsernameAvailableResponse(rsp)
 }
 
 // ParsePostAuthOtpResponse parses an HTTP response from a PostAuthOtpWithResponse call
@@ -1303,6 +1662,193 @@ func ParseGetMeProfileResponse(rsp *http.Response) (*GetMeProfileResponse, error
 	return response, nil
 }
 
+// ParsePostMeUpdateProfileResponse parses an HTTP response from a PostMeUpdateProfileWithResponse call
+func ParsePostMeUpdateProfileResponse(rsp *http.Response) (*PostMeUpdateProfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostMeUpdateProfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data Data returned by the API call
+			Data *map[string]interface{} `json:"data,omitempty"`
+
+			// DisplayName Display name of the user
+			DisplayName *string `json:"displayName"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// PrivacyLevel Privacy level of the user, public, private, full_private
+			PrivacyLevel *string `json:"privacyLevel,omitempty"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+
+			// Username Username of the user
+			Username *string `json:"username,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			// Message Message from the API call
+			Message *string `json:"message"`
+
+			// Timestamp Timestamp of the response
+			Timestamp *string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostUserUsernameAvailableResponse parses an HTTP response from a PostUserUsernameAvailableWithResponse call
+func ParsePostUserUsernameAvailableResponse(rsp *http.Response) (*PostUserUsernameAvailableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostUserUsernameAvailableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data Data returned by the API call
+			Data *map[string]interface{} `json:"data,omitempty"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			// Message Message from the API call
+			Message *string `json:"message"`
+
+			// Timestamp Timestamp of the response
+			Timestamp *string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			// ErrorCode Error code
+			ErrorCode string `json:"errorCode"`
+
+			// Message Message from the API call
+			Message string `json:"message"`
+
+			// Success Success status of the API call
+			Success bool `json:"success"`
+
+			// Timestamp Timestamp of the response
+			Timestamp string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Send OTP code to email for existing users or create new user account
@@ -1320,6 +1866,12 @@ type ServerInterface interface {
 	// Get user information
 	// (GET /me/profile)
 	GetMeProfile(w http.ResponseWriter, r *http.Request)
+	// Update user profile
+	// (POST /me/update-profile)
+	PostMeUpdateProfile(w http.ResponseWriter, r *http.Request)
+	// Check if username is available
+	// (POST /user/username-available)
+	PostUserUsernameAvailable(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1404,6 +1956,46 @@ func (siw *ServerInterfaceWrapper) GetMeProfile(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMeProfile(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostMeUpdateProfile operation middleware
+func (siw *ServerInterfaceWrapper) PostMeUpdateProfile(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostMeUpdateProfile(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostUserUsernameAvailable operation middleware
+func (siw *ServerInterfaceWrapper) PostUserUsernameAvailable(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostUserUsernameAvailable(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1538,6 +2130,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("POST "+options.BaseURL+"/auth/refresh-token", wrapper.PostAuthRefreshToken)
 	m.HandleFunc("GET "+options.BaseURL+"/me/avatar", wrapper.GetMeAvatar)
 	m.HandleFunc("GET "+options.BaseURL+"/me/profile", wrapper.GetMeProfile)
+	m.HandleFunc("POST "+options.BaseURL+"/me/update-profile", wrapper.PostMeUpdateProfile)
+	m.HandleFunc("POST "+options.BaseURL+"/user/username-available", wrapper.PostUserUsernameAvailable)
 
 	return m
 }
@@ -1941,6 +2535,187 @@ func (response GetMeProfile500JSONResponse) VisitGetMeProfileResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostMeUpdateProfileRequestObject struct {
+	Body *PostMeUpdateProfileJSONRequestBody
+}
+
+type PostMeUpdateProfileResponseObject interface {
+	VisitPostMeUpdateProfileResponse(w http.ResponseWriter) error
+}
+
+type PostMeUpdateProfile200JSONResponse struct {
+	// Data Data returned by the API call
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// DisplayName Display name of the user
+	DisplayName *string `json:"displayName"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// PrivacyLevel Privacy level of the user, public, private, full_private
+	PrivacyLevel *string `json:"privacyLevel,omitempty"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+
+	// Username Username of the user
+	Username *string `json:"username,omitempty"`
+}
+
+func (response PostMeUpdateProfile200JSONResponse) VisitPostMeUpdateProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostMeUpdateProfile400JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostMeUpdateProfile400JSONResponse) VisitPostMeUpdateProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostMeUpdateProfile401JSONResponse struct {
+	// Message Message from the API call
+	Message *string `json:"message"`
+
+	// Timestamp Timestamp of the response
+	Timestamp *string `json:"timestamp"`
+}
+
+func (response PostMeUpdateProfile401JSONResponse) VisitPostMeUpdateProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostMeUpdateProfile500JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostMeUpdateProfile500JSONResponse) VisitPostMeUpdateProfileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostUserUsernameAvailableRequestObject struct {
+	Body *PostUserUsernameAvailableJSONRequestBody
+}
+
+type PostUserUsernameAvailableResponseObject interface {
+	VisitPostUserUsernameAvailableResponse(w http.ResponseWriter) error
+}
+
+type PostUserUsernameAvailable200JSONResponse struct {
+	// Data Data returned by the API call
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostUserUsernameAvailable200JSONResponse) VisitPostUserUsernameAvailableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostUserUsernameAvailable401JSONResponse struct {
+	// Message Message from the API call
+	Message *string `json:"message"`
+
+	// Timestamp Timestamp of the response
+	Timestamp *string `json:"timestamp"`
+}
+
+func (response PostUserUsernameAvailable401JSONResponse) VisitPostUserUsernameAvailableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostUserUsernameAvailable422JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostUserUsernameAvailable422JSONResponse) VisitPostUserUsernameAvailableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostUserUsernameAvailable500JSONResponse struct {
+	// ErrorCode Error code
+	ErrorCode string `json:"errorCode"`
+
+	// Message Message from the API call
+	Message string `json:"message"`
+
+	// Success Success status of the API call
+	Success bool `json:"success"`
+
+	// Timestamp Timestamp of the response
+	Timestamp string `json:"timestamp"`
+}
+
+func (response PostUserUsernameAvailable500JSONResponse) VisitPostUserUsernameAvailableResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Send OTP code to email for existing users or create new user account
@@ -1958,6 +2733,12 @@ type StrictServerInterface interface {
 	// Get user information
 	// (GET /me/profile)
 	GetMeProfile(ctx context.Context, request GetMeProfileRequestObject) (GetMeProfileResponseObject, error)
+	// Update user profile
+	// (POST /me/update-profile)
+	PostMeUpdateProfile(ctx context.Context, request PostMeUpdateProfileRequestObject) (PostMeUpdateProfileResponseObject, error)
+	// Check if username is available
+	// (POST /user/username-available)
+	PostUserUsernameAvailable(ctx context.Context, request PostUserUsernameAvailableRequestObject) (PostUserUsernameAvailableResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -2123,6 +2904,68 @@ func (sh *strictHandler) GetMeProfile(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetMeProfileResponseObject); ok {
 		if err := validResponse.VisitGetMeProfileResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostMeUpdateProfile operation middleware
+func (sh *strictHandler) PostMeUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	var request PostMeUpdateProfileRequestObject
+
+	var body PostMeUpdateProfileJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostMeUpdateProfile(ctx, request.(PostMeUpdateProfileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostMeUpdateProfile")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostMeUpdateProfileResponseObject); ok {
+		if err := validResponse.VisitPostMeUpdateProfileResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostUserUsernameAvailable operation middleware
+func (sh *strictHandler) PostUserUsernameAvailable(w http.ResponseWriter, r *http.Request) {
+	var request PostUserUsernameAvailableRequestObject
+
+	var body PostUserUsernameAvailableJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostUserUsernameAvailable(ctx, request.(PostUserUsernameAvailableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostUserUsernameAvailable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostUserUsernameAvailableResponseObject); ok {
+		if err := validResponse.VisitPostUserUsernameAvailableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

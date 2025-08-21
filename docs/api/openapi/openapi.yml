@@ -26,3 +26,7 @@ paths:
     $ref: './paths/user.yml#/profile'
   /me/avatar:
     $ref: './paths/user.yml#/read_avatar_signed_url'
+  /me/update-profile:
+    $ref: './paths/user.yml#/update_profile'
+  /user/username-available:
+    $ref: './paths/user.yml#/username_available'

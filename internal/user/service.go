@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -13,7 +15,8 @@ type Service interface {
 	CreateDefaultUserWithAuthID(ctx context.Context, authID uuid.UUID) (User, error)
 	GetUserByID(ctx context.Context, userID string) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
-
+	UpdateUser(ctx context.Context, user PartialUser) (User, error)
+	UserNameAvailable(ctx context.Context, username string) (bool, error)
 	// Transaction-aware methods
 	WithTx(tx pgx.Tx) Service
 }
@@ -64,4 +67,36 @@ func (s *service) GetUserByEmail(ctx context.Context, email string) (User, error
 		return User{}, ErrNotFound
 	}
 	return user, nil
+}
+func (s *service) UpdateUser(ctx context.Context, user PartialUser) (User, error) {
+
+	if user.Username != nil {
+		available, err := s.UserNameAvailable(ctx, *user.Username)
+		if err != nil {
+			fmt.Println("Error checking username availability:", err)
+			return User{}, err
+		}
+		if !available {
+			fmt.Println("Username already exists:", *user.Username)
+			return User{}, ErrUsernameAlreadyExists
+		}
+		matched, err := regexp.MatchString(userNameRegex, *user.Username)
+		if err != nil {
+			fmt.Println("Error checking username regex:", err)
+			return User{}, err
+		}
+		if !matched {
+			return User{}, ErrInvalidUsername
+		}
+	}
+
+	return s.repo.UpdateUser(ctx, user)
+}
+
+func (s *service) UserNameAvailable(ctx context.Context, username string) (bool, error) {
+	exists, err := s.repo.UserNameExists(ctx, username)
+	if err != nil {
+		return false, err
+	}
+	return !exists, nil
 }

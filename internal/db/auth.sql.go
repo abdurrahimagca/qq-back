@@ -210,3 +210,14 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	)
 	return i, err
 }
+
+const userNameExists = `-- name: UserNameExists :one
+SELECT COUNT(*) FROM users WHERE username = $1 LIMIT 1
+`
+
+func (q *Queries) UserNameExists(ctx context.Context, username string) (int64, error) {
+	row := q.db.QueryRow(ctx, userNameExists, username)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}

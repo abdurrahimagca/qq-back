@@ -17,6 +17,8 @@ type Repository interface {
 	CreateUser(ctx context.Context, username string) (User, error)
 	CreateUserWithAuthID(ctx context.Context, authID uuid.UUID, username string) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
+	UpdateUser(ctx context.Context, user PartialUser) (User, error)
+	UserNameExists(ctx context.Context, username string) (bool, error)
 }
 
 type pgxRepository struct {
@@ -76,6 +78,25 @@ func (r *pgxRepository) GetUserByEmail(ctx context.Context, email string) (User,
 	}
 	return mapDBUserToDomainUser(dbUser), nil
 }
+func (r *pgxRepository) UpdateUser(ctx context.Context, user PartialUser) (User, error) {
+	dbUser, err := r.q.UpdateUser(ctx, db.UpdateUserParams{
+		ID:           pgtype.UUID{Bytes: user.ID, Valid: true},
+		DisplayName:  pgtype.Text{String: *user.DisplayName, Valid: user.DisplayName != nil},
+		PrivacyLevel: db.NullPrivacyLevel{PrivacyLevel: db.PrivacyLevel(*user.PrivacyLevel), Valid: user.PrivacyLevel != nil},
+	})
+	if err != nil {
+		return User{}, err
+	}
+	return mapDBUserToDomainUser(dbUser), nil
+}
+
+func (r *pgxRepository) UserNameExists(ctx context.Context, username string) (bool, error) {
+	exists, err := r.q.UserNameExists(ctx, username)
+	if err != nil {
+		return false, err
+	}
+	return exists > 0, nil
+}
 
 func mapDBUserToDomainUser(dbUser db.User) User {
 	var displayName *string
@@ -93,7 +114,7 @@ func mapDBUserToDomainUser(dbUser db.User) User {
 		AuthID:       dbUser.AuthID.Bytes,
 		Username:     dbUser.Username,
 		DisplayName:  displayName,
-		PrivacyLevel: string(dbUser.PrivacyLevel),
+		PrivacyLevel: PrivacyLevel(dbUser.PrivacyLevel),
 		AvatarKey:    avatarKey,
 	}
 }

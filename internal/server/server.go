@@ -18,15 +18,17 @@ import (
 type Server struct {
 	registrationUC app.RegistrationUsecase
 	fileUC         app.FileUsecase
+	userService    user.Service
 }
 
 // Compile-time interface compliance check
 var _ api.StrictServerInterface = (*Server)(nil)
 
-func NewServer(registrationUC app.RegistrationUsecase, fileUC app.FileUsecase) api.StrictServerInterface {
+func NewServer(registrationUC app.RegistrationUsecase, fileUC app.FileUsecase, userService user.Service) api.StrictServerInterface {
 	return &Server{
 		registrationUC: registrationUC,
 		fileUC:         fileUC,
+		userService:    userService,
 	}
 }
 
@@ -54,7 +56,7 @@ func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http
 	fileUC := app.NewFileUsecase(r2Service, *config)
 
 	// Create the server that implements StrictServerInterface
-	server := NewServer(registrationUC, fileUC)
+	server := NewServer(registrationUC, fileUC, userService)
 
 	// Initialize strict middleware
 	strictAuthMiddleware := middleware.NewStrictAuthMiddleware(tokenService, userService, []string{"/docs", "/openapi.json"})

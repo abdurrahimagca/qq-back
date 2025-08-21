@@ -21,6 +21,7 @@ type Querier interface {
 	InsertAuthOtpCode(ctx context.Context, arg InsertAuthOtpCodeParams) (pgtype.UUID, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UserNameExists(ctx context.Context, username string) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)
