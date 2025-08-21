@@ -60,4 +60,15 @@ components:
           description: Timestamp of the response
           example: '2021-01-01T00:00:00Z'
           x-omitempty: false
-      
+    NotFoundResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message from the API call
+          x-omitempty: false
+        timestamp:
+          type: string
+          description: Timestamp of the response
+          example: '2021-01-01T00:00:00Z'
+          x-omitempty: false

@@ -1,0 +1,112 @@
+package middleware
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/abdurrahimagca/qq-back/internal/ports"
+	"github.com/abdurrahimagca/qq-back/internal/user"
+)
+
+type AuthMiddleware struct {
+	tokenService ports.TokenPort
+	userService  user.Service
+}
+
+func NewAuthMiddleware(tokenService ports.TokenPort, userService user.Service) *AuthMiddleware {
+	return &AuthMiddleware{
+		tokenService: tokenService,
+		userService:  userService,
+	}
+}
+
+func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			return
+		}
+
+		// Extract Bearer token
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+			return
+		}
+
+		token := parts[1]
+		
+		// Validate token
+		tokenResult, err := m.tokenService.ValidateToken(r.Context(), ports.ValidateTokenParams{
+			Token: token,
+		})
+		if err != nil {
+			http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		// Get user from database
+		userID := tokenResult.Claims.UserID
+		if userID == "" {
+			http.Error(w, "Invalid token: missing user ID", http.StatusUnauthorized)
+			return
+		}
+
+		user, err := m.userService.GetUserByID(r.Context(), userID)
+		if err != nil {
+			http.Error(w, "User not found: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		// Add user to context
+		ctx := WithUser(r.Context(), &user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			// No auth provided, continue without user
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Extract Bearer token
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			// Invalid format but optional, continue without user
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		token := parts[1]
+		
+		// Try to validate token
+		tokenResult, err := m.tokenService.ValidateToken(r.Context(), ports.ValidateTokenParams{
+			Token: token,
+		})
+		if err != nil {
+			// Invalid token but optional, continue without user
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Get user from database
+		userID := tokenResult.Claims.UserID
+		if userID != "" {
+			user, err := m.userService.GetUserByID(r.Context(), userID)
+			if err == nil {
+				// Add user to context
+				ctx := WithUser(r.Context(), &user)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+		}
+
+		// Continue without user if anything fails
+		next.ServeHTTP(w, r)
+	})
+}

@@ -7,6 +7,8 @@ import (
 	"github.com/abdurrahimagca/qq-back/internal/app"
 	"github.com/abdurrahimagca/qq-back/internal/auth"
 	"github.com/abdurrahimagca/qq-back/internal/environment"
+	"github.com/abdurrahimagca/qq-back/internal/middleware"
+	"github.com/abdurrahimagca/qq-back/internal/platform/file-upload"
 	"github.com/abdurrahimagca/qq-back/internal/platform/mailer"
 	"github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/user"
@@ -15,14 +17,16 @@ import (
 
 type Server struct {
 	registrationUC app.RegistrationUsecase
+	fileUC         app.FileUsecase
 }
 
 // Compile-time interface compliance check
 var _ api.StrictServerInterface = (*Server)(nil)
 
-func NewServer(registrationUC app.RegistrationUsecase) api.StrictServerInterface {
+func NewServer(registrationUC app.RegistrationUsecase, fileUC app.FileUsecase) api.StrictServerInterface {
 	return &Server{
 		registrationUC: registrationUC,
+		fileUC:         fileUC,
 	}
 }
 
@@ -43,15 +47,20 @@ func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http
 	// Initialize platform services
 	mailerService := mailer.NewResendMailer(config)
 	tokenService := token.NewJWTTokenService(config)
+	r2Service := fileupload.NewR2Service(config.R2)
 
 	// Initialize use cases
 	registrationUC := app.NewRegistrationUsecase(mailerService, authService, userService, pool, tokenService)
+	fileUC := app.NewFileUsecase(r2Service, *config)
 
 	// Create the server that implements StrictServerInterface
-	server := NewServer(registrationUC)
+	server := NewServer(registrationUC, fileUC)
 
-	// Create strict handler
-	strictHandler := api.NewStrictHandler(server, nil)
+	// Initialize strict middleware
+	strictAuthMiddleware := middleware.NewStrictAuthMiddleware(tokenService, userService, []string{"/docs", "/openapi.json"})
+	
+	// Create strict handler with middleware
+	strictHandler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{strictAuthMiddleware.Middleware})
 
 	// Create ServeMux and register routes
 	mux := http.NewServeMux()
@@ -61,6 +70,7 @@ func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http
 
 	// Add documentation and utility routes
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
+		
 		http.ServeFile(w, r, "./cmd/_docs.html")
 	})
 
@@ -74,6 +84,5 @@ func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	// Return the unified handler
 	return mux, nil
 }

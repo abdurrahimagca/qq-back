@@ -27,72 +27,38 @@ profile:
           application/json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
-profile_update:
-  post:
-    tags:
-      - User
-    summary: Update user information
-    description: Update user information
+
+read_avatar_signed_url:
+  tags:
+    - User
+  get:
+    summary: Get signed URL for avatar
+    description: Get signed URL for avatar
     security:
       - BearerAuth: []
-    requestBody:
-      content:
-        application/json:
-          schema:
-            $ref: '../components/user.yml#/components/schemas/User'
     responses:
       '200':
-        description: User information updated successfully
+        description: Signed URL for avatar
         content:
           application/json:
             schema:
               allOf:
                 - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
-                - $ref: '../components/user.yml#/components/schemas/User'
+                - type: object
                   properties:
-                    reVerifyOtp:
-                      type: boolean
-                      description: Whether to re-verify OTP, if email is changed, you need to re-verify OTP
-                      example: false
-      '401':
-        description: Unauthorized, please check your access token
-        content:
-          application/json:
-            schema:
-              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
-      '500':
-        description: Internal server error
-        content:
-          application/json:
-            schema:
-              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
-profile_update_avatar:
-  put:
-    tags:
-      - User
-    summary: Update avatar
-    description: Update avatar
-    security:
-      - BearerAuth: []
-    requestBody:
-      content:
-        application/octet-stream:
-          schema:
-            type: string
-            format: binary
-    responses:
-      '200':
-        description: Avatar updated successfully
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
-                  properties:
-                    avatarSignedUrl:
+                    signedUrl:
                       type: string
-                      description: Long live avatar URL of the user, valid for 1 month
-                      example: 'https://example.com/avatar.png'
+                      description: Signed URL for avatar
+                    expiresIn:
+                      type: integer
+                      description: Expires in seconds
+                      example: 3600
+      '404':
+        description: Avatar not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/NotFoundResponse'
       '401':
         description: Unauthorized, please check your access token
         content:

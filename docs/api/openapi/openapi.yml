@@ -22,3 +22,7 @@ paths:
     $ref: './paths/auth.yml#/otp-verify'
   /auth/refresh-token:
     $ref: './paths/auth.yml#/refresh-token'
+  /me/profile:
+    $ref: './paths/user.yml#/profile'
+  /me/avatar:
+    $ref: './paths/user.yml#/read_avatar_signed_url'

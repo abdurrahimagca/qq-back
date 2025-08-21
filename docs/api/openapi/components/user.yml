@@ -10,18 +10,10 @@ components:
           example: 'John Doe'
         username:
           type: string
+          nullable: false
           description: Username of the user
-          example: 'john_doe'
-        avatarSignedUrl:
-          type: string
-          nullable: true
-          description: Long live avatar URL of the user, valid for 1 month
-          example: 'https://example.com/avatar.png'
+          example: 'john_doe' 
         privacyLevel:
           type: string
           description: Privacy level of the user, public, private, full_private
           example: public
-        email:
-          type: string
-          description: Email of the user
-          example: 'john.doe@example.com'
