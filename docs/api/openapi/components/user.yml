@@ -8,6 +8,7 @@ components:
           nullable: true
           description: Display name of the user
           example: 'John Doe'
+          maxLength: 512
         username:
           type: string
           nullable: false
@@ -16,10 +17,14 @@ components:
           pattern: '^[a-zA-Z0-9_-]+$'
           minLength: 3
           maxLength: 512
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"
         privacyLevel:
           type: string
           description: Privacy level of the user, public, private, full_private
           example: public
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=public private full_private"
     PartialUser:
       type: object
       properties:
@@ -28,6 +33,9 @@ components:
           nullable: true
           description: Display name of the user
           example: 'John Doe'
+          maxLength: 512
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,max=512"
         username:
           type: string
           nullable: true
@@ -36,6 +44,8 @@ components:
           pattern: '^[a-zA-Z0-9_-]+$'
           minLength: 3
           maxLength: 512
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"
         privacyLevel:
           type: string
           nullable: true
@@ -45,3 +55,5 @@ components:
             - public
             - private
             - full_private
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=public private full_private"

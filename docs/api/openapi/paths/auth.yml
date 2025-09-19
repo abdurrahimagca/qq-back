@@ -14,8 +14,11 @@ otp:
             properties:
               email:
                 type: string
+                format: email
                 description: Email address of the user
                 example: 'test@example.com'
+                x-oapi-codegen-extra-tags:
+                  validate: required,email
             required:
               - email
             example:
@@ -67,12 +70,17 @@ otp-verify:
             properties:
               email:
                 type: string
+                format: email
                 description: Email address of the user
                 example: 'test@example.com'
+                x-oapi-codegen-extra-tags:
+                  validate: required,email
               otpCode:
                 type: string
                 description: OTP code received via email
                 example: '123456'
+                x-oapi-codegen-extra-tags:
+                  validate: required
             required:
               - email
               - otpCode
@@ -132,6 +140,8 @@ refresh-token:
                 type: string
                 description: Refresh token for the user
                 example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+                x-oapi-codegen-extra-tags:
+                  validate: required
             required:
               - refreshToken
             example:

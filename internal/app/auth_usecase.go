@@ -13,7 +13,7 @@ import (
 )
 
 type RegistrationUsecase interface {
-	RegisterOrLoginOTP(ctx context.Context, email string) error
+	RegisterOrLoginOTP(ctx context.Context, email string) (*bool, error)
 	VerifyOTPAndLogin(ctx context.Context, email string, otp string) (ports.GenerateTokenResult, error)
 	RefreshTokens(ctx context.Context, refreshToken string) (ports.GenerateTokenResult, error)
 }
@@ -36,10 +36,10 @@ func NewRegistrationUsecase(mailer ports.MailerPort, authService auth.Service, u
 	}
 }
 
-func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email string) error {
+func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email string) (*bool, error) {
 	tx, err := uc.dbpool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer func() {
 		// Only rollback if transaction is still active (not committed)
@@ -50,11 +50,18 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 
 	txAuthService := uc.authService.WithTx(tx)
 	txUserService := uc.userService.WithTx(tx)
+	var isNewUser bool
 
 	// Try to get existing user first
 	foundUser, err := txUserService.GetUserByEmail(ctx, email)
 	if err != nil && err != user.ErrNotFound {
-		return fmt.Errorf("failed to get user by email: %w", err)
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	if foundUser.ID != uuid.Nil {
+		isNewUser = false
+	} else {
+		isNewUser = true
 	}
 
 	var authID uuid.UUID
@@ -63,14 +70,14 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 		// Create auth record with email
 		authIDPtr, err := txAuthService.CreateNewAuthForOTPLogin(ctx, email)
 		if err != nil {
-			return fmt.Errorf("failed to create auth record: %w", err)
+			return nil, fmt.Errorf("failed to create auth record: %w", err)
 		}
 		authID = *authIDPtr
 
 		// Create user with the auth_id
 		foundUser, err = txUserService.CreateDefaultUserWithAuthID(ctx, authID)
 		if err != nil {
-			return fmt.Errorf("failed to create user: %w", err)
+			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 	} else {
 		// User exists, get their auth_id
@@ -79,24 +86,24 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 
 	err = uc.authService.KillOrphanedOTPsByUserID(ctx, foundUser.ID)
 	if err != nil {
-		return fmt.Errorf("failed to kill orphaned otps: %w", err)
+		return nil, fmt.Errorf("failed to kill orphaned otps: %w", err)
 	}
 
 	// Generate and save OTP using auth_id (not user_id)
 	otp, err := txAuthService.GenerateAndSaveOTPForAuth(ctx, authID)
 	if err != nil {
-		return fmt.Errorf("failed to generate and save otp: %w", err)
+		return nil, fmt.Errorf("failed to generate and save otp: %w", err)
 	}
 
 	// Get email template (this doesn't need transaction)
 	template, err := uc.mailer.GetEmailTemplate(ctx, "otp")
 	if err != nil {
-		return fmt.Errorf("failed to get email template: %w", err)
+		return nil, fmt.Errorf("failed to get email template: %w", err)
 	}
 
 	// Commit transaction before sending email
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	tx = nil // Mark transaction as committed so defer won't try to rollback
 
@@ -112,10 +119,10 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 		// Note: Transaction is already committed, so OTP is saved
 		// This is intentional - we don't want to rollback user creation
 		// just because email failed. Log the error and continue.
-		return fmt.Errorf("OTP created successfully but failed to send email: %w", err)
+		return nil, fmt.Errorf("OTP created successfully but failed to send email: %w", err)
 	}
 
-	return nil
+	return &isNewUser, nil
 }
 func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, email string, otp string) (ports.GenerateTokenResult, error) {
 	tx, err := uc.dbpool.Begin(ctx)

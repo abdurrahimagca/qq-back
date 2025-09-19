@@ -139,6 +139,8 @@ username_available:
                 minLength: 3
                 maxLength: 512
                 nullable: false
+                x-oapi-codegen-extra-tags:
+                  validate: "required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"
     responses:
       '200':
         description: Username is available
@@ -154,6 +156,105 @@ username_available:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '422':
         description: Unprocessable entity, username is used by another user
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+upload_new_avatar:
+  tags:
+    - User
+  post:
+    operationId: uploadNewAvatar
+    summary: Upload new avatar
+    description: Upload new avatar
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        binary:
+          schema:
+            type: string
+            format: binary
+    responses:
+      '200':
+        description: Avatar uploaded successfully
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+                - type: object
+                  properties:
+                    signedUrl:
+                      type: string
+                      description: Signed URL for avatar
+                    expiresIn:
+                      type: integer
+                      description: Expires in seconds
+      '401':
+        description: Unauthorized, must be logged in to upload avatar
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '403':  
+        description: Forbidden, avatar upload is disabled or access token is invalid
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '422':
+        description: Unprocessable entity, avatar is not a valid image
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+
+
+delete_avatar:
+  tags:
+    - User
+  delete:
+    operationId: deleteAvatar
+    summary: Delete avatar
+    description: Delete avatar
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Avatar deleted successfully
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../components/common.yml#/components/schemas/SuccessResponse'
+      '401':
+        description: Unauthorized, must be logged in to delete avatar
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '403':  
+        description: Forbidden, avatar delete is disabled or access token is invalid
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
+      '422':
+        description: Unprocessable entity, avatar is not found
         content:
           application/problem+json:
             schema:

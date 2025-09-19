@@ -12,6 +12,7 @@ import (
 	"github.com/abdurrahimagca/qq-back/internal/platform/mailer"
 	"github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/user"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -19,19 +20,22 @@ type Server struct {
 	registrationUC app.RegistrationUsecase
 	fileUC         app.FileUsecase
 	userService    user.Service
+	validator      *validator.Validate
 }
 
 // Compile-time interface compliance check
 var _ api.StrictServerInterface = (*Server)(nil)
 
 func NewServer(registrationUC app.RegistrationUsecase, fileUC app.FileUsecase, userService user.Service) api.StrictServerInterface {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
 	return &Server{
 		registrationUC: registrationUC,
 		fileUC:         fileUC,
 		userService:    userService,
+		validator:      validate,
 	}
 }
-
 
 func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http.Handler, error) {
 	// Initialize repositories
@@ -56,7 +60,7 @@ func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http
 
 	// Initialize strict middleware
 	strictAuthMiddleware := middleware.NewStrictAuthMiddleware(tokenService, userService, []string{"/docs", "/openapi.json"})
-	
+
 	// Create strict handler with middleware
 	strictHandler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{strictAuthMiddleware.Middleware})
 
@@ -68,7 +72,7 @@ func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http
 
 	// Add documentation and utility routes
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
-		
+
 		http.ServeFile(w, r, "./cmd/_docs.html")
 	})
 

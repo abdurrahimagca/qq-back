@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -32,34 +33,34 @@ const (
 // SendOtpJSONBody defines parameters for SendOtp.
 type SendOtpJSONBody struct {
 	// Email Email address of the user
-	Email string `json:"email"`
+	Email openapi_types.Email `json:"email" validate:"required,email"`
 }
 
 // VerifyOtpJSONBody defines parameters for VerifyOtp.
 type VerifyOtpJSONBody struct {
 	// Email Email address of the user
-	Email string `json:"email"`
+	Email openapi_types.Email `json:"email" validate:"required,email"`
 
 	// OtpCode OTP code received via email
-	OtpCode string `json:"otpCode"`
+	OtpCode string `json:"otpCode" validate:"required"`
 }
 
 // RefreshTokenJSONBody defines parameters for RefreshToken.
 type RefreshTokenJSONBody struct {
 	// RefreshToken Refresh token for the user
-	RefreshToken string `json:"refreshToken"`
+	RefreshToken string `json:"refreshToken" validate:"required"`
 }
 
 // UpdateMeProfileJSONBody defines parameters for UpdateMeProfile.
 type UpdateMeProfileJSONBody struct {
 	// DisplayName Display name of the user
-	DisplayName *string `json:"displayName"`
+	DisplayName *string `json:"displayName" validate:"omitempty,max=512"`
 
 	// PrivacyLevel Privacy level of the user, public, private, full_private
-	PrivacyLevel *UpdateMeProfileJSONBodyPrivacyLevel `json:"privacyLevel"`
+	PrivacyLevel *UpdateMeProfileJSONBodyPrivacyLevel `json:"privacyLevel" validate:"omitempty,oneof=public private full_private"`
 
 	// Username Username of the user
-	Username *string `json:"username"`
+	Username *string `json:"username" validate:"omitempty,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 }
 
 // UpdateMeProfileJSONBodyPrivacyLevel defines parameters for UpdateMeProfile.
@@ -68,7 +69,7 @@ type UpdateMeProfileJSONBodyPrivacyLevel string
 // CheckUsernameAvailableJSONBody defines parameters for CheckUsernameAvailable.
 type CheckUsernameAvailableJSONBody struct {
 	// Username Username to check
-	Username *string `json:"username,omitempty"`
+	Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 }
 
 // SendOtpJSONRequestBody defines body for SendOtp for application/json ContentType.
@@ -1053,7 +1054,7 @@ type GetMeProfileResponse struct {
 		Message *string `json:"message"`
 
 		// PrivacyLevel Privacy level of the user, public, private, full_private
-		PrivacyLevel *string `json:"privacyLevel,omitempty"`
+		PrivacyLevel *string `json:"privacyLevel,omitempty" validate:"required,oneof=public private full_private"`
 
 		// Success Success status of the API call
 		Success *bool `json:"success"`
@@ -1062,7 +1063,7 @@ type GetMeProfileResponse struct {
 		Timestamp *string `json:"timestamp"`
 
 		// Username Username of the user
-		Username *string `json:"username,omitempty"`
+		Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 	}
 	JSON401 *struct {
 		// Description Detail of the error
@@ -1140,7 +1141,7 @@ type UpdateMeProfileResponse struct {
 		Message *string `json:"message"`
 
 		// PrivacyLevel Privacy level of the user, public, private, full_private
-		PrivacyLevel *string `json:"privacyLevel,omitempty"`
+		PrivacyLevel *string `json:"privacyLevel,omitempty" validate:"required,oneof=public private full_private"`
 
 		// Success Success status of the API call
 		Success *bool `json:"success"`
@@ -1149,7 +1150,7 @@ type UpdateMeProfileResponse struct {
 		Timestamp *string `json:"timestamp"`
 
 		// Username Username of the user
-		Username *string `json:"username,omitempty"`
+		Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 	}
 	ApplicationproblemJSON400 *struct {
 		// Description Detail of the error
@@ -1915,7 +1916,7 @@ func ParseGetMeProfileResponse(rsp *http.Response) (*GetMeProfileResponse, error
 			Message *string `json:"message"`
 
 			// PrivacyLevel Privacy level of the user, public, private, full_private
-			PrivacyLevel *string `json:"privacyLevel,omitempty"`
+			PrivacyLevel *string `json:"privacyLevel,omitempty" validate:"required,oneof=public private full_private"`
 
 			// Success Success status of the API call
 			Success *bool `json:"success"`
@@ -1924,7 +1925,7 @@ func ParseGetMeProfileResponse(rsp *http.Response) (*GetMeProfileResponse, error
 			Timestamp *string `json:"timestamp"`
 
 			// Username Username of the user
-			Username *string `json:"username,omitempty"`
+			Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -2018,7 +2019,7 @@ func ParseUpdateMeProfileResponse(rsp *http.Response) (*UpdateMeProfileResponse,
 			Message *string `json:"message"`
 
 			// PrivacyLevel Privacy level of the user, public, private, full_private
-			PrivacyLevel *string `json:"privacyLevel,omitempty"`
+			PrivacyLevel *string `json:"privacyLevel,omitempty" validate:"required,oneof=public private full_private"`
 
 			// Success Success status of the API call
 			Success *bool `json:"success"`
@@ -2027,7 +2028,7 @@ func ParseUpdateMeProfileResponse(rsp *http.Response) (*UpdateMeProfileResponse,
 			Timestamp *string `json:"timestamp"`
 
 			// Username Username of the user
-			Username *string `json:"username,omitempty"`
+			Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -2984,7 +2985,7 @@ type GetMeProfile200JSONResponse struct {
 	Message *string `json:"message"`
 
 	// PrivacyLevel Privacy level of the user, public, private, full_private
-	PrivacyLevel *string `json:"privacyLevel,omitempty"`
+	PrivacyLevel *string `json:"privacyLevel,omitempty" validate:"required,oneof=public private full_private"`
 
 	// Success Success status of the API call
 	Success *bool `json:"success"`
@@ -2993,7 +2994,7 @@ type GetMeProfile200JSONResponse struct {
 	Timestamp *string `json:"timestamp"`
 
 	// Username Username of the user
-	Username *string `json:"username,omitempty"`
+	Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 }
 
 func (response GetMeProfile200JSONResponse) VisitGetMeProfileResponse(w http.ResponseWriter) error {
@@ -3082,7 +3083,7 @@ type UpdateMeProfile200JSONResponse struct {
 	Message *string `json:"message"`
 
 	// PrivacyLevel Privacy level of the user, public, private, full_private
-	PrivacyLevel *string `json:"privacyLevel,omitempty"`
+	PrivacyLevel *string `json:"privacyLevel,omitempty" validate:"required,oneof=public private full_private"`
 
 	// Success Success status of the API call
 	Success *bool `json:"success"`
@@ -3091,7 +3092,7 @@ type UpdateMeProfile200JSONResponse struct {
 	Timestamp *string `json:"timestamp"`
 
 	// Username Username of the user
-	Username *string `json:"username,omitempty"`
+	Username *string `json:"username,omitempty" validate:"required,min=3,max=512,regexp=^[a-zA-Z0-9_-]+$"`
 }
 
 func (response UpdateMeProfile200JSONResponse) VisitUpdateMeProfileResponse(w http.ResponseWriter) error {

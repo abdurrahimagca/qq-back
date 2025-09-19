@@ -14,13 +14,15 @@ func (s *Server) GetMeProfile(ctx context.Context, request api.GetMeProfileReque
 	user := middleware.MustGetUserFromContext(ctx)
 
 	if user == nil {
-	   return api.GetMeProfile401JSONResponse{
+		now := time.Now().UTC()
+		return api.GetMeProfile401JSONResponse{
 			Message:   stringPtr("Unauthorized"),
-			Success:  boolPtr(false),
-			Timestamp: stringPtr(time.Now().UTC().Format(time.RFC3339)),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 
+	now := time.Now().UTC()
 	return api.GetMeProfile200JSONResponse{
 		Data: &map[string]interface{}{
 			"username":     user.Username,
@@ -29,7 +31,7 @@ func (s *Server) GetMeProfile(ctx context.Context, request api.GetMeProfileReque
 		},
 		Message:   stringPtr("Profile retrieved successfully"),
 		Success:   boolPtr(true),
-		Timestamp: timeStrPtr(time.Now().UTC()),
+		Timestamp: timeStrPtr(now),
 	}, nil
 }
 func (s *Server) GetMeAvatar(ctx context.Context, request api.GetMeAvatarRequestObject) (api.GetMeAvatarResponseObject, error) {
@@ -76,18 +78,29 @@ func (s *Server) UpdateMeProfile(ctx context.Context, request api.UpdateMeProfil
 	ctxUser := middleware.MustGetUserFromContext(ctx)
 
 	if ctxUser == nil {
+		now := time.Now().UTC()
 		return api.UpdateMeProfile401ApplicationProblemPlusJSONResponse{
 			Message:   stringPtr("Unauthorized"),
 			Success:   boolPtr(false),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 
 	if request.Body == nil {
+		now := time.Now().UTC()
 		return api.UpdateMeProfile400ApplicationProblemPlusJSONResponse{
 			Message:   stringPtr("Request body is required"),
 			Success:   boolPtr(false),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
+		}, nil
+	}
+
+	if err := s.validator.Struct(request.Body); err != nil {
+		now := time.Now().UTC()
+		return api.UpdateMeProfile400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr(validationErrorMessage(err)),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 
@@ -104,13 +117,15 @@ func (s *Server) UpdateMeProfile(ctx context.Context, request api.UpdateMeProfil
 		Username:     request.Body.Username,
 	})
 	if err != nil {
+		now := time.Now().UTC()
 		return api.UpdateMeProfile500ApplicationProblemPlusJSONResponse{
 			Message:   stringPtr("Failed to update profile: " + err.Error()),
 			Success:   boolPtr(false),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 
+	now := time.Now().UTC()
 	return api.UpdateMeProfile200JSONResponse{
 		Data: &map[string]interface{}{
 			"username":     updatedUser.Username,
@@ -119,46 +134,61 @@ func (s *Server) UpdateMeProfile(ctx context.Context, request api.UpdateMeProfil
 		},
 		Message:   stringPtr("Profile updated successfully"),
 		Success:   boolPtr(true),
-		Timestamp: timeStrPtr(time.Now().UTC()),
+		Timestamp: timeStrPtr(now),
 	}, nil
 }
 func (s *Server) CheckUsernameAvailable(ctx context.Context, request api.CheckUsernameAvailableRequestObject) (api.CheckUsernameAvailableResponseObject, error) {
 	user := middleware.MustGetUserFromContext(ctx)
 
 	if user == nil {
+		now := time.Now().UTC()
 		return api.CheckUsernameAvailable401ApplicationProblemPlusJSONResponse{
 			Message:   stringPtr("Unauthorized"),
 			Success:   boolPtr(false),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 
-	if request.Body == nil || request.Body.Username == nil {
+	if request.Body == nil {
+		now := time.Now().UTC()
 		return api.CheckUsernameAvailable422ApplicationProblemPlusJSONResponse{
-			Message:   stringPtr("Username is required"),
+			Message:   stringPtr("Request body is required"),
 			Success:   boolPtr(false),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 
-	available, err := s.userService.UserNameAvailable(ctx, *request.Body.Username)
+	if err := s.validator.Struct(request.Body); err != nil {
+		now := time.Now().UTC()
+		return api.CheckUsernameAvailable422ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr(validationErrorMessage(err)),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(now),
+		}, nil
+	}
+
+	username := *request.Body.Username
+	available, err := s.userService.UserNameAvailable(ctx, username)
 	if err != nil {
+		now := time.Now().UTC()
 		return api.CheckUsernameAvailable500ApplicationProblemPlusJSONResponse{
 			Message:   stringPtr("Failed to check username availability: " + err.Error()),
 			Success:   boolPtr(false),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
+
+	now := time.Now().UTC()
 	if available {
 		return api.CheckUsernameAvailable200JSONResponse{
 			Message:   stringPtr("Username available"),
 			Success:   boolPtr(true),
-			Timestamp: timeStrPtr(time.Now().UTC()),
+			Timestamp: timeStrPtr(now),
 		}, nil
 	}
 	return api.CheckUsernameAvailable422ApplicationProblemPlusJSONResponse{
 		Message:   stringPtr("Username already exists"),
 		Success:   boolPtr(false),
-		Timestamp: timeStrPtr(time.Now().UTC()),
+		Timestamp: timeStrPtr(now),
 	}, nil
 }
