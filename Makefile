@@ -5,7 +5,7 @@ include docker/.env.dev
 
 # Development commands (Docker only)
 dev-up:
-	cd docker && docker compose up
+	docker compose --env-file docker/.env.dev -f docker/compose.yml -f docker/compose.override.yml up 
 
 dev-up-tunnel:
 	cd docker && docker compose up && ngrok http 3003
@@ -41,14 +41,14 @@ build-docker:
 
 # Database migrations (via Docker)
 migrate-up:
-	cd docker && docker compose exec api migrate -path db/migrations -database "${DATABASE_URL}" up
+	docker compose --env-file docker/.env.dev -f docker/compose.yml -f docker/compose.override.yml exec api migrate -path db/migrations -database "${DATABASE_URL}" up
 
 migrate-down:
-	cd docker && docker compose exec api migrate -path db/migrations -database "${DATABASE_URL}" down
+	cd docker && docker compose --env-file docker/.env.dev -f docker/compose.yml -f docker/compose.override.yml exec api migrate -path db/migrations -database "${DATABASE_URL}" down
 
 migrate-create:
 	@read -p "Enter migration name: " name; \
-	cd docker && docker compose exec api migrate create -ext sql -dir db/migrations $$name
+	cd docker && docker compose --env-file docker/.env.dev -f docker/compose.yml -f docker/compose.override.yml exec api migrate create -ext sql -dir db/migrations $$name
 
 migrate-force:
 	@read -p "Enter version to force: " version; \

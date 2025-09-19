@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 type ResendEnvironment struct {
@@ -37,15 +35,7 @@ type Environment struct {
 }
 
 func Load() (*Environment, error) {
-	env := os.Getenv("ENV")
-	if env == "" {
-		env = "development"
-	}
 
-	envFileName := fmt.Sprintf(".env.%s", env)
-	if err := godotenv.Load(envFileName); err != nil {
-		return nil, fmt.Errorf("error loading %s: %w", envFileName, err)
-	}
 	accessTokenExpireTime, err := strconv.Atoi(os.Getenv("ACCESS_TOKEN_EXPIRE_TIME"))
 	if err != nil {
 		return nil, fmt.Errorf("error converting ACCESS_TOKEN_EXPIRE_TIME to int: %w", err)

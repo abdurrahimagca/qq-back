@@ -1,74 +1,53 @@
 components:
   schemas:
-    SuccessResponse:
+    ApiSchema:
       type: object
-      required:
-        - success
-        - message
-        - timestamp
       properties:
         success:
           type: boolean
           description: Success status of the API call
+          x-omitempty: false
         message:
           type: string
           description: Message from the API call
-        data:
-          type: object
-          description: Data returned by the API call
+          x-omitempty: false
         timestamp:
           type: string
           description: Timestamp of the response
           example: '2021-01-01T00:00:00Z'
+          x-omitempty: false
+
+    SuccessResponse:
+      allOf:
+        - $ref: './common.yml#/components/schemas/ApiSchema'
+        - type: object
+          properties:
+            data:
+              type: object
+              description: Data returned by the API call
+              x-omitempty: false
 
     ErrorResponse:
-      type: object
-      additionalProperties: false
-      required:
-        - success 
-        - message
-        - timestamp
-        - errorCode
-        - errorTrace
-      properties:
-        success:
-          type: boolean
-          description: Success status of the API call
-          x-omitempty: false
-        message:
-          type: string
-          description: Message from the API call
-          x-omitempty: false
-        timestamp:
-          type: string
-          description: Timestamp of the response
-          example: '2021-01-01T00:00:00Z'
-          x-omitempty: false
-        errorCode:
-          type: string
-          description: Error code
-          x-omitempty: false
-    UnauthorizedResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Message from the API call
-          x-omitempty: false
-        timestamp:
-          type: string
-          description: Timestamp of the response
-          example: '2021-01-01T00:00:00Z'
-          x-omitempty: false
-    NotFoundResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Message from the API call
-          x-omitempty: false
-        timestamp:
-          type: string
-          description: Timestamp of the response
-          example: '2021-01-01T00:00:00Z'
-          x-omitempty: false
+      allOf:
+        - $ref: './common.yml#/components/schemas/ApiSchema'
+        - type: object
+          additionalProperties: false
+          properties:
+            title:
+              type: string
+              description: Title of the error
+              x-omitempty: false
+            description:
+              type: string
+              description: Detail of the error
+              x-omitempty: false
+            location:
+              type: array
+              description: Location of the error
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  error:
+                    type: string

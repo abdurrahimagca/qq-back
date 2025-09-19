@@ -2,6 +2,7 @@ profile:
   tags:
     - User
   get:
+    operationId: getMeProfile
     summary: Get user information
     description: Get user information
     security:
@@ -20,7 +21,7 @@ profile:
         content:
           application/json:
             schema:
-              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
@@ -32,6 +33,7 @@ read_avatar_signed_url:
   tags:
     - User
   get:
+    operationId: getMeAvatar
     summary: Get signed URL for avatar
     description: Get signed URL for avatar
     security:
@@ -56,25 +58,26 @@ read_avatar_signed_url:
       '404':
         description: Avatar not found
         content:
-          application/json:
+          application/problem+json:
             schema:
-              $ref: '../components/common.yml#/components/schemas/NotFoundResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '401':
         description: Unauthorized, please check your access token
         content:
-          application/json:
+          application/problem+json:
             schema:
-              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 update_profile:
   tags:
     - User
   post:
+    operationId: updateMeProfile
     summary: Update user profile
     description: Update user profile
     security:
@@ -97,25 +100,26 @@ update_profile:
       '401':
         description: Unauthorized, please check your access token
         content:
-          application/json:
+          application/problem+json:
             schema:
-              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '400':
         description: Bad request
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 username_available:
   tags:
     - User
   post:
+    operationId: checkUsernameAvailable
     summary: Check if username is available
     description: Check if username is available
     security:
@@ -145,18 +149,18 @@ username_available:
       '401':
         description: Unauthorized, please check your access token
         content:
-          application/json:
+          application/problem+json:
             schema:
-              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '422':
         description: Unprocessable entity, username is used by another user
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'

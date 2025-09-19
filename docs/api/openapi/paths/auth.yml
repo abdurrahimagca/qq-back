@@ -1,5 +1,6 @@
 otp:
   post:
+    operationId: sendOtp
     tags:
       - Auth
     summary: Send OTP code to email for existing users or create new user account
@@ -40,18 +41,19 @@ otp:
         summary: Bad request - Invalid email or validation error
         description: Bad request - Invalid email or validation error, usually due to email is not a valid email address
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 
 otp-verify:
   post:
+    operationId: verifyOtp
     tags:
       - Auth
     summary: Verify OTP code
@@ -102,18 +104,19 @@ otp-verify:
         summary: Bad request - Invalid email or validation error or invalid OTP code
         description: Bad request - Invalid email or validation error or invalid OTP code, usually due to email is not a valid email address or OTP code is not a valid OTP code
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
 
 refresh-token:
   post:
+    operationId: refreshToken
     tags:
       - Auth
     summary: Refresh access token
@@ -155,19 +158,19 @@ refresh-token:
         summary: Bad request - Invalid refresh token
         description: Bad request - Invalid refresh token, usually due to refresh token is not a valid refresh token
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '401':
         description: Unauthorized
         content:
-          application/json:
+          application/problem+json:
             schema:
-              $ref: '../components/common.yml#/components/schemas/UnauthorizedResponse'
+              $ref: '../components/common.yml#/components/schemas/ErrorResponse'
       '500':
         description: Internal server error
         content:
-          application/json:
+          application/problem+json:
             schema:
               $ref: '../components/common.yml#/components/schemas/ErrorResponse'
               

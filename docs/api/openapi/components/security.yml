@@ -12,7 +12,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: './common.yml#/components/schemas/UnauthorizedResponse'
+            $ref: './common.yml#/components/schemas/ErrorResponse'
     
     ForbiddenError:
       description: Access forbidden - insufficient permissions

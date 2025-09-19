@@ -33,10 +33,6 @@ func NewServer(registrationUC app.RegistrationUsecase, fileUC app.FileUsecase, u
 }
 
 
-func stringPtr(s string) *string {
-	return &s
-}
-
 func NewUnifiedServer(pool *pgxpool.Pool, config *environment.Environment) (http.Handler, error) {
 	// Initialize repositories
 	authRepo := auth.NewPgxRepository(pool)

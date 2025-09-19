@@ -7,56 +7,53 @@ import (
 	"github.com/abdurrahimagca/qq-back/internal/api"
 )
 
-func (s *Server) PostAuthOtp(ctx context.Context, request api.PostAuthOtpRequestObject) (api.PostAuthOtpResponseObject, error) {
+func (s *Server) SendOtp(ctx context.Context, request api.SendOtpRequestObject) (api.SendOtpResponseObject, error) {
 	if request.Body == nil {
-		return api.PostAuthOtp400JSONResponse{
-			ErrorCode: "INVALID_REQUEST",
-			Message:   "Request body is required",
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.SendOtp400ApplicationProblemPlusJSONResponse{
+			
+			Message:   stringPtr("Request body is required"),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC	()),
 		}, nil
 	}
 
 	email := request.Body.Email
 	if email == "" {
-		return api.PostAuthOtp400JSONResponse{
-			ErrorCode: "INVALID_EMAIL",
-			Message:   "Email is required",
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.SendOtp400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Email is required"),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
 	err := s.registrationUC.RegisterOrLoginOTP(ctx, email)
 	if err != nil {
-		return api.PostAuthOtp500JSONResponse{
-			ErrorCode: "INTERNAL_ERROR",
-			Message:   "Failed to send OTP: " + err.Error(),
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.SendOtp500ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Failed to send OTP: " + err.Error()),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
 	isNewUser := true
-	return api.PostAuthOtp200JSONResponse{
+	return api.SendOtp200JSONResponse{
 		Data: &struct {
 			IsNewUser *bool `json:"isNewUser,omitempty"`
 		}{
 			IsNewUser: &isNewUser,
 		},
-		Message:   "OTP sent successfully",
-		Success:   true,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Message:   stringPtr("OTP sent successfully"),
+		Success:   boolPtr(true),
+		Timestamp: timeStrPtr(time.Now().UTC()),
 	}, nil
 }
 
-func (s *Server) PostAuthOtpVerify(ctx context.Context, request api.PostAuthOtpVerifyRequestObject) (api.PostAuthOtpVerifyResponseObject, error) {
+func (s *Server) VerifyOtp(ctx context.Context, request api.VerifyOtpRequestObject) (api.VerifyOtpResponseObject, error) {
 	if request.Body == nil {
-		return api.PostAuthOtpVerify400JSONResponse{
-			ErrorCode: "INVALID_REQUEST",
-			Message:   "Request body is required",
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.VerifyOtp400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Request body is required"),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
@@ -64,25 +61,23 @@ func (s *Server) PostAuthOtpVerify(ctx context.Context, request api.PostAuthOtpV
 	otpCode := request.Body.OtpCode
 
 	if email == "" || otpCode == "" {
-		return api.PostAuthOtpVerify400JSONResponse{
-			ErrorCode: "INVALID_REQUEST",
-			Message:   "Email and OTP code are required",
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.VerifyOtp400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Email and OTP code are required"),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
 	tokens, err := s.registrationUC.VerifyOTPAndLogin(ctx, email, otpCode)
 	if err != nil {
-		return api.PostAuthOtpVerify400JSONResponse{
-			ErrorCode: "INVALID_OTP",
-			Message:   "Invalid OTP code: " + err.Error(),
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.VerifyOtp400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Invalid OTP code: " + err.Error()),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
-	return api.PostAuthOtpVerify200JSONResponse{
+	return api.VerifyOtp200JSONResponse{
 		Data: &struct {
 			AccessToken  *string `json:"accessToken,omitempty"`
 			RefreshToken *string `json:"refreshToken,omitempty"`
@@ -90,46 +85,46 @@ func (s *Server) PostAuthOtpVerify(ctx context.Context, request api.PostAuthOtpV
 			AccessToken:  &tokens.AccessToken,
 			RefreshToken: &tokens.RefreshToken,
 		},
-		Message:   "Login successful",
-		Success:   true,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Message:   stringPtr("Login successful"),
+		Success:   boolPtr(true),
+		Timestamp: timeStrPtr(time.Now().UTC()),
 	}, nil
 }
 
-func (s *Server) PostAuthRefreshToken(ctx context.Context, request api.PostAuthRefreshTokenRequestObject) (api.PostAuthRefreshTokenResponseObject, error) {
+func (s *Server) RefreshToken(ctx context.Context, request api.RefreshTokenRequestObject) (api.RefreshTokenResponseObject, error) {
 	if request.Body == nil {
-		return api.PostAuthRefreshToken400JSONResponse{
-			ErrorCode: "INVALID_REQUEST",
-			Message:   "Request body is required",
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.RefreshToken400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Request body is required"),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
 	refreshToken := request.Body.RefreshToken
 	if refreshToken == "" {
-		return api.PostAuthRefreshToken400JSONResponse{
-			ErrorCode: "INVALID_REQUEST",
-			Message:   "Refresh token is required",
-			Success:   false,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		return api.RefreshToken400ApplicationProblemPlusJSONResponse{
+			Message:   stringPtr("Refresh token is required"),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
 	newTokens, err := s.registrationUC.RefreshTokens(ctx, refreshToken)
 	if err != nil {
-		return api.PostAuthRefreshToken401JSONResponse{
+		return api.RefreshToken401ApplicationProblemPlusJSONResponse{
 			Message:   stringPtr("Invalid or expired refresh token: " + err.Error()),
-			Timestamp: stringPtr(time.Now().UTC().Format(time.RFC3339)),
+			Success:   boolPtr(false),
+			Timestamp: timeStrPtr(time.Now().UTC()),
 		}, nil
 	}
 
-	return api.PostAuthRefreshToken200JSONResponse{
-		AccessToken:  &newTokens.AccessToken,
-		RefreshToken: &newTokens.RefreshToken,
-		Data:         &map[string]interface{}{},
-		Message:      "Tokens refreshed successfully",
-		Success:      true,
-		Timestamp:    time.Now().UTC().Format(time.RFC3339),
+	return api.RefreshToken200JSONResponse{
+		Data: &map[string]interface{}{
+			"accessToken":  newTokens.AccessToken,
+			"refreshToken": newTokens.RefreshToken,
+		},
+		Message:   stringPtr("Tokens refreshed successfully"),
+		Success:   boolPtr(true),
+		Timestamp: timeStrPtr(time.Now().UTC()),
 	}, nil
 }
