@@ -2,8 +2,6 @@ package auth
 
 import (
 	"errors"
-
-	"github.com/google/uuid"
 )
 
 var (
@@ -12,8 +10,4 @@ var (
 	ErrNotFound       = errors.New("not found")
 )
 
-type GetUserIdAndEmailByOtpCodeResult struct {
-	ID    uuid.UUID
-	Email string
-}
 

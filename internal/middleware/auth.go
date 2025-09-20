@@ -6,6 +6,7 @@ import (
 
 	"github.com/abdurrahimagca/qq-back/internal/ports"
 	"github.com/abdurrahimagca/qq-back/internal/user"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AuthMiddleware struct {
@@ -53,14 +54,20 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := m.userService.GetUserByID(r.Context(), userID)
+		var userUUID pgtype.UUID
+		err = userUUID.Scan(userID)
+		if err != nil {
+			http.Error(w, "Invalid user ID: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+		user, err := m.userService.GetUserByID(r.Context(), userUUID)
 		if err != nil {
 			http.Error(w, "User not found: "+err.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		// Add user to context
-		ctx := WithUser(r.Context(), &user)
+		ctx := WithUser(r.Context(), user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -97,10 +104,20 @@ func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
 		// Get user from database
 		userID := tokenResult.Claims.UserID
 		if userID != "" {
-			user, err := m.userService.GetUserByID(r.Context(), userID)
+			var userUUID pgtype.UUID
+			err = userUUID.Scan(userID)
+			if err != nil {
+				http.Error(w, "Invalid user ID: "+err.Error(), http.StatusUnauthorized)
+				return
+			}
+			user, err := m.userService.GetUserByID(r.Context(), userUUID)
+			if err != nil {
+				http.Error(w, "User not found: "+err.Error(), http.StatusUnauthorized)
+				return
+			}
 			if err == nil {
 				// Add user to context
-				ctx := WithUser(r.Context(), &user)
+				ctx := WithUser(r.Context(), user)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
