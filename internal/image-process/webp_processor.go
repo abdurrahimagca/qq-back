@@ -1,8 +1,11 @@
+//go:build cgo
+
 package imageprocess
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -25,6 +28,8 @@ type WebpProcessor struct {
 	maxHeight uint
 	quality   int
 }
+
+var ErrWebpProcessorUnavailable = errors.New("webp processing requires cgo support")
 
 func NewWebpProcessor() *WebpProcessor {
 	return &WebpProcessor{
