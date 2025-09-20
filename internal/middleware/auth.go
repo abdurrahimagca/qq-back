@@ -4,17 +4,17 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/abdurrahimagca/qq-back/internal/ports"
+	tokenport "github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/user"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AuthMiddleware struct {
-	tokenService ports.TokenPort
+	tokenService tokenport.Service
 	userService  user.Service
 }
 
-func NewAuthMiddleware(tokenService ports.TokenPort, userService user.Service) *AuthMiddleware {
+func NewAuthMiddleware(tokenService tokenport.Service, userService user.Service) *AuthMiddleware {
 	return &AuthMiddleware{
 		tokenService: tokenService,
 		userService:  userService,
@@ -37,9 +37,9 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		token := parts[1]
-		
+
 		// Validate token
-		tokenResult, err := m.tokenService.ValidateToken(r.Context(), ports.ValidateTokenParams{
+		tokenResult, err := m.tokenService.ValidateToken(r.Context(), tokenport.ValidateTokenParams{
 			Token: token,
 		})
 		if err != nil {
@@ -90,9 +90,9 @@ func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
 		}
 
 		token := parts[1]
-		
+
 		// Try to validate token
-		tokenResult, err := m.tokenService.ValidateToken(r.Context(), ports.ValidateTokenParams{
+		tokenResult, err := m.tokenService.ValidateToken(r.Context(), tokenport.ValidateTokenParams{
 			Token: token,
 		})
 		if err != nil {

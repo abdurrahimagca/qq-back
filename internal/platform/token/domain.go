@@ -1,8 +1,6 @@
-package ports
+package token
 
 import (
-	"context"
-
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -26,9 +24,4 @@ type ValidateTokenParams struct {
 
 type ValidateTokenResult struct {
 	Claims *Claims
-}
-
-type TokenPort interface {
-	GenerateTokens(ctx context.Context, params GenerateTokenParams) (GenerateTokenResult, error)
-	ValidateToken(ctx context.Context, params ValidateTokenParams) (ValidateTokenResult, error)
 }

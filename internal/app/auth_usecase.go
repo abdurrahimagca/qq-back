@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"github.com/abdurrahimagca/qq-back/internal/auth"
-	"github.com/abdurrahimagca/qq-back/internal/ports"
+	mail "github.com/abdurrahimagca/qq-back/internal/platform/mailer"
+	tokenport "github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/user"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,19 +15,19 @@ import (
 
 type RegistrationUsecase interface {
 	RegisterOrLoginOTP(ctx context.Context, email string) (*bool, error)
-	VerifyOTPAndLogin(ctx context.Context, email string, otp string) (ports.GenerateTokenResult, error)
-	RefreshTokens(ctx context.Context, refreshToken string) (ports.GenerateTokenResult, error)
+	VerifyOTPAndLogin(ctx context.Context, email string, otp string) (tokenport.GenerateTokenResult, error)
+	RefreshTokens(ctx context.Context, refreshToken string) (tokenport.GenerateTokenResult, error)
 }
 
 type registrationUsecase struct {
-	mailer       ports.MailerPort
+	mailer       mail.Service
 	authService  auth.Service
 	userService  user.Service
 	dbpool       *pgxpool.Pool
-	tokenService ports.TokenPort
+	tokenService tokenport.Service
 }
 
-func NewRegistrationUsecase(mailer ports.MailerPort, authService auth.Service, userService user.Service, pool *pgxpool.Pool, tokenService ports.TokenPort) RegistrationUsecase { // <-- EKLENDİ & DÖNÜŞ TİPİ DEĞİŞTİ
+func NewRegistrationUsecase(mailer mail.Service, authService auth.Service, userService user.Service, pool *pgxpool.Pool, tokenService tokenport.Service) RegistrationUsecase {
 	return &registrationUsecase{
 		mailer:       mailer,
 		authService:  authService,
@@ -36,7 +37,7 @@ func NewRegistrationUsecase(mailer ports.MailerPort, authService auth.Service, u
 	}
 }
 
-func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email string) (*bool, error) {
+func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr string) (*bool, error) {
 	tx, err := uc.dbpool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -51,7 +52,7 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 	txUserService := uc.userService.WithTx(tx)
 	var isNewUser bool
 
-	foundUser, err := txUserService.GetUserByEmail(ctx, email)
+	foundUser, err := txUserService.GetUserByEmail(ctx, emailAddr)
 	if err != nil && err != user.ErrNotFound {
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
@@ -64,7 +65,7 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 
 	var authID pgtype.UUID
 	if !foundUser.ID.Valid {
-		authIDPtr, err := txAuthService.CreateNewAuthForOTPLogin(ctx, email)
+		authIDPtr, err := txAuthService.CreateNewAuthForOTPLogin(ctx, emailAddr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create auth record: %w", err)
 		}
@@ -88,7 +89,7 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 		return nil, fmt.Errorf("failed to generate and save otp: %w", err)
 	}
 
-	template, err := uc.mailer.GetEmailTemplate(ctx, "otp")
+	template, err := uc.mailer.GetTemplate(ctx, "otp")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get email template: %w", err)
 	}
@@ -99,9 +100,9 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 	tx = nil
 
 	body := strings.Replace(template, "{{.OTP}}", otp, 1)
-	err = uc.mailer.SendEmail(ctx, ports.SendEmailParams{
+	err = uc.mailer.SendEmail(ctx, mail.SendParams{
 		From:    "qq@homelab-kaleici.space",
-		To:      email,
+		To:      emailAddr,
 		Subject: "OTP Verification",
 		Body:    body,
 	})
@@ -111,10 +112,10 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, email str
 
 	return &isNewUser, nil
 }
-func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, email string, otp string) (ports.GenerateTokenResult, error) {
+func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, emailAddr string, otp string) (tokenport.GenerateTokenResult, error) {
 	tx, err := uc.dbpool.Begin(ctx)
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("failed to begin transaction: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer func() {
 		if tx != nil {
@@ -125,62 +126,62 @@ func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, email stri
 	txAuthService := uc.authService.WithTx(tx)
 	txUserService := uc.userService.WithTx(tx)
 
-	err = txAuthService.VerifyOTP(ctx, email, otp)
+	err = txAuthService.VerifyOTP(ctx, emailAddr, otp)
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("invalid OTP: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("invalid OTP: %w", err)
 	}
 
-	user, err := txUserService.GetUserByEmail(ctx, email)
+	user, err := txUserService.GetUserByEmail(ctx, emailAddr)
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("failed to get user: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	err = txAuthService.KillOrphanedOTPsByUserID(ctx, user.ID)
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("failed to clean up OTP codes: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("failed to clean up OTP codes: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("failed to commit transaction: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	tx = nil
 
-	tokens, err := uc.tokenService.GenerateTokens(ctx, ports.GenerateTokenParams{
+	tokenPair, err := uc.tokenService.GenerateTokens(ctx, tokenport.GenerateTokenParams{
 		UserID: user.ID.String(),
 	})
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("failed to generate tokens: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
-	return tokens, nil
+	return tokenPair, nil
 }
-func (uc *registrationUsecase) RefreshTokens(ctx context.Context, refreshToken string) (ports.GenerateTokenResult, error) {
-	tokenResult, err := uc.tokenService.ValidateToken(ctx, ports.ValidateTokenParams{
+func (uc *registrationUsecase) RefreshTokens(ctx context.Context, refreshToken string) (tokenport.GenerateTokenResult, error) {
+	tokenResult, err := uc.tokenService.ValidateToken(ctx, tokenport.ValidateTokenParams{
 		Token: refreshToken,
 	})
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("invalid refresh token: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("invalid refresh token: %w", err)
 	}
 
 	userID := tokenResult.Claims.UserID
 	if userID == "" {
-		return ports.GenerateTokenResult{}, fmt.Errorf("invalid token: missing user ID")
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("invalid token: missing user ID")
 	}
 
 	userUUID := pgtype.UUID{}
 	if err := userUUID.Scan(userID); err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("invalid user ID format: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("invalid user ID format: %w", err)
 	}
 	user, err := uc.userService.GetUserByID(ctx, userUUID)
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("user not found: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("user not found: %w", err)
 	}
 
-	newTokens, err := uc.tokenService.GenerateTokens(ctx, ports.GenerateTokenParams{
+	newTokens, err := uc.tokenService.GenerateTokens(ctx, tokenport.GenerateTokenParams{
 		UserID: user.ID.String(),
 	})
 	if err != nil {
-		return ports.GenerateTokenResult{}, fmt.Errorf("failed to generate new tokens: %w", err)
+		return tokenport.GenerateTokenResult{}, fmt.Errorf("failed to generate new tokens: %w", err)
 	}
 
 	return newTokens, nil

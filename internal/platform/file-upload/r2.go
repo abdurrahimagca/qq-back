@@ -4,37 +4,26 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"io"
 	"log"
 	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/environment"
-	"github.com/abdurrahimagca/qq-back/internal/ports"
+	imageprocess "github.com/abdurrahimagca/qq-back/internal/image-process"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
-	"github.com/kolesa-team/go-webp/encoder"
-	"github.com/kolesa-team/go-webp/webp"
-	"github.com/nfnt/resize"
 )
-
-type ProcessedImage struct {
-	Data     []byte
-	MimeType string
-}
 
 type R2Service struct {
 	client      *s3.Client
 	environment environment.R2Environment
+	processor   imageprocess.Processor
 }
 
-func NewR2Service(environment environment.R2Environment) ports.UploadFilePort {
+func NewR2Service(environment environment.R2Environment, processor imageprocess.Processor) Uploader {
 	accessKeyId := environment.AccessKeyID
 	accessKeySecret := environment.SecretAccessKey
 	accountId := environment.AccountID
@@ -51,16 +40,21 @@ func NewR2Service(environment environment.R2Environment) ports.UploadFilePort {
 		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
 	})
 
+	if processor == nil {
+		processor = imageprocess.NewWebpProcessor()
+	}
+
 	return &R2Service{
 		client:      client,
 		environment: environment,
+		processor:   processor,
 	}
 }
 
 func (s *R2Service) UploadFile(ctx context.Context, file io.Reader) (*string, error) {
 	totalStart := time.Now()
 
-	processedImage, err := s.processSingleImage(file)
+	processedImage, err := s.processor.ImageProcessor(ctx, file)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +81,7 @@ func (s *R2Service) UploadFile(ctx context.Context, file io.Reader) (*string, er
 	return &key, nil
 }
 
-func (s *R2Service) GetSignedUrlByKey(ctx context.Context, key string, expires time.Duration) (*string, error) {
+func (s *R2Service) GetSignedURL(ctx context.Context, key string, expires time.Duration) (*string, error) {
 	presignClient := s3.NewPresignClient(s.client)
 	presignResult, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		ResponseExpires: aws.Time(time.Now().Add(expires)),
@@ -106,33 +100,4 @@ func (s *R2Service) DeleteFile(ctx context.Context, key string) error {
 		Key:    aws.String(key),
 	})
 	return err
-}
-
-func (s *R2Service) processSingleImage(file io.Reader) (*ProcessedImage, error) {
-	start := time.Now()
-
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-
-	thumb := resize.Thumbnail(2048, 1080, img, resize.Lanczos3)
-
-	var buf bytes.Buffer
-	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 85)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := webp.Encode(&buf, thumb, options); err != nil {
-		return nil, err
-	}
-
-	processedImage := &ProcessedImage{
-		Data:     buf.Bytes(),
-		MimeType: "image/webp",
-	}
-
-	log.Printf("Total single image processing took: %v", time.Since(start))
-	return processedImage, nil
 }
