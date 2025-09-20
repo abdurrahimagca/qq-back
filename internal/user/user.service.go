@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"fmt"
+	"encoding/hex"
 
 	"github.com/abdurrahimagca/qq-back/internal/db"
 	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
@@ -34,7 +34,7 @@ func (s *service) WithTx(tx pgx.Tx) Service {
 func (s *service) CreateDefaultUserWithAuthID(ctx context.Context, authID pgtype.UUID) (*db.User, error) {
 	prefix := "user_"
 	// Generate a simple username using authID bytes
-	username := prefix + fmt.Sprintf("%x", authID.Bytes[:6])
+	username := prefix + hex.EncodeToString(authID.Bytes[:6])
 
 	return s.repo.CreateUserWithAuthID(ctx, authID, username)
 }

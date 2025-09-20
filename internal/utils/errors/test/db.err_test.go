@@ -31,20 +31,20 @@ func TestQQError_Unwrap(t *testing.T) {
 		Original:   originalErr,
 	}
 
-	if serr.Unwrap() != originalErr {
+	if !errors.Is(serr, originalErr) {
 		t.Errorf("Expected original error, got %v", serr.Unwrap())
 	}
 }
 
-func TestGetDbErrAsQQError_NilError(t *testing.T) {
-	result := qqerrors.GetDbErrAsQQError(nil)
+func TestGetDBErrAsQQError_NilError(t *testing.T) {
+	result := qqerrors.GetDBErrAsQQError(nil)
 	if result != nil {
 		t.Errorf("Expected nil, got %v", result)
 	}
 }
 
-func TestGetDbErrAsQQError_NoRows(t *testing.T) {
-	result := qqerrors.GetDbErrAsQQError(pgx.ErrNoRows)
+func TestGetDBErrAsQQError_NoRows(t *testing.T) {
+	result := qqerrors.GetDBErrAsQQError(pgx.ErrNoRows)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -58,18 +58,18 @@ func TestGetDbErrAsQQError_NoRows(t *testing.T) {
 		t.Errorf("Expected %d, got %d", http.StatusNotFound, result.StatusCode)
 	}
 
-	if result.Original != qqerrors.ErrNotFound {
+	if !errors.Is(result.Original, qqerrors.ErrNotFound) {
 		t.Errorf("Expected qqerrors.ErrNotFound, got %v", result.Original)
 	}
 }
 
-func TestGetDbErrAsQQError_UniqueViolation(t *testing.T) {
+func TestGetDBErrAsQQError_UniqueViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    qqerrors.SQL_UNIQUE_VIOLATION,
+		Code:    qqerrors.SQLUniqueViolation,
 		Message: "duplicate key value violates unique constraint",
 	}
 
-	result := qqerrors.GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDBErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -84,13 +84,13 @@ func TestGetDbErrAsQQError_UniqueViolation(t *testing.T) {
 	}
 }
 
-func TestGetDbErrAsQQError_ForeignKeyViolation(t *testing.T) {
+func TestGetDBErrAsQQError_ForeignKeyViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    qqerrors.SQL_FOREIGN_KEY_VIOLATION,
+		Code:    qqerrors.SQLForeignKeyViolation,
 		Message: "foreign key constraint violation",
 	}
 
-	result := qqerrors.GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDBErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -105,13 +105,13 @@ func TestGetDbErrAsQQError_ForeignKeyViolation(t *testing.T) {
 	}
 }
 
-func TestGetDbErrAsQQError_CheckViolation(t *testing.T) {
+func TestGetDBErrAsQQError_CheckViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    qqerrors.SQL_CHECK_VIOLATION,
+		Code:    qqerrors.SQLCheckViolation,
 		Message: "check constraint violation",
 	}
 
-	result := qqerrors.GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDBErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -126,13 +126,13 @@ func TestGetDbErrAsQQError_CheckViolation(t *testing.T) {
 	}
 }
 
-func TestGetDbErrAsQQError_NotNullViolation(t *testing.T) {
+func TestGetDBErrAsQQError_NotNullViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    qqerrors.SQL_NOT_NULL_VIOLATION,
+		Code:    qqerrors.SQLNotNullViolation,
 		Message: "not null constraint violation",
 	}
 
-	result := qqerrors.GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDBErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -147,13 +147,13 @@ func TestGetDbErrAsQQError_NotNullViolation(t *testing.T) {
 	}
 }
 
-func TestGetDbErrAsQQError_UnknownPgError(t *testing.T) {
+func TestGetDBErrAsQQError_UnknownPgError(t *testing.T) {
 	pgErr := &pgconn.PgError{
 		Code:    "99999",
 		Message: "unknown database error",
 	}
 
-	result := qqerrors.GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDBErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -169,10 +169,10 @@ func TestGetDbErrAsQQError_UnknownPgError(t *testing.T) {
 	}
 }
 
-func TestGetDbErrAsQQError_GenericError(t *testing.T) {
+func TestGetDBErrAsQQError_GenericError(t *testing.T) {
 	genericErr := errors.New("some generic error")
 
-	result := qqerrors.GetDbErrAsQQError(genericErr)
+	result := qqerrors.GetDBErrAsQQError(genericErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")

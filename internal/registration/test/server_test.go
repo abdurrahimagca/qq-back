@@ -47,10 +47,10 @@ func (f *fakeRegistrationUsecase) RefreshTokens(
 	return f.refreshResult, f.refreshErr
 }
 
-func TestRegistrationServer_SendOtpHandler_Success(t *testing.T) {
+func TestServer_SendOtpHandler_Success(t *testing.T) {
 	isNew := true
 	uc := &fakeRegistrationUsecase{registerResult: &isNew}
-	server := registration.NewRegistrationServer(uc)
+	server := registration.NewServer(uc)
 
 	input := &registration.SendOtpInput{}
 	input.Body.Email = "user@example.com"
@@ -62,9 +62,9 @@ func TestRegistrationServer_SendOtpHandler_Success(t *testing.T) {
 	assert.Equal(t, "user@example.com", uc.lastRegisterEmail)
 }
 
-func TestRegistrationServer_SendOtpHandler_Error(t *testing.T) {
+func TestServer_SendOtpHandler_Error(t *testing.T) {
 	uc := &fakeRegistrationUsecase{registerErr: qqerrors.ErrValidationError}
-	server := registration.NewRegistrationServer(uc)
+	server := registration.NewServer(uc)
 
 	input := &registration.SendOtpInput{}
 	input.Body.Email = "invalid"
@@ -74,9 +74,9 @@ func TestRegistrationServer_SendOtpHandler_Error(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestRegistrationServer_VerifyOtpHandler_Success(t *testing.T) {
+func TestServer_VerifyOtpHandler_Success(t *testing.T) {
 	uc := &fakeRegistrationUsecase{verifyResult: token.GenerateTokenResult{AccessToken: "acc", RefreshToken: "ref"}}
-	server := registration.NewRegistrationServer(uc)
+	server := registration.NewServer(uc)
 
 	input := &registration.VerifyOtpInput{}
 	input.Body.Email = "user@example.com"
@@ -91,9 +91,9 @@ func TestRegistrationServer_VerifyOtpHandler_Success(t *testing.T) {
 	assert.Equal(t, "123456", uc.lastVerifyOTP)
 }
 
-func TestRegistrationServer_VerifyOtpHandler_Error(t *testing.T) {
+func TestServer_VerifyOtpHandler_Error(t *testing.T) {
 	uc := &fakeRegistrationUsecase{verifyErr: errors.New("invalid otp")}
-	server := registration.NewRegistrationServer(uc)
+	server := registration.NewServer(uc)
 
 	input := &registration.VerifyOtpInput{}
 	input.Body.Email = "user@example.com"
@@ -104,10 +104,10 @@ func TestRegistrationServer_VerifyOtpHandler_Error(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestRegistrationServer_RefreshTokensHandler_Success(t *testing.T) {
+func TestServer_RefreshTokensHandler_Success(t *testing.T) {
 	uc := &fakeRegistrationUsecase{
 		refreshResult: token.GenerateTokenResult{AccessToken: "new-acc", RefreshToken: "new-ref"}}
-	server := registration.NewRegistrationServer(uc)
+	server := registration.NewServer(uc)
 
 	input := &registration.RefreshTokensInput{}
 	input.Body.RefreshToken = "token"
@@ -120,9 +120,9 @@ func TestRegistrationServer_RefreshTokensHandler_Success(t *testing.T) {
 	assert.Equal(t, "token", uc.lastRefreshToken)
 }
 
-func TestRegistrationServer_RefreshTokensHandler_Error(t *testing.T) {
+func TestServer_RefreshTokensHandler_Error(t *testing.T) {
 	uc := &fakeRegistrationUsecase{refreshErr: qqerrors.ErrUnauthorized}
-	server := registration.NewRegistrationServer(uc)
+	server := registration.NewServer(uc)
 
 	input := &registration.RefreshTokensInput{}
 	input.Body.RefreshToken = "bad"

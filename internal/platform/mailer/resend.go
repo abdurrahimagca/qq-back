@@ -3,6 +3,7 @@ package mailer
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -30,6 +31,12 @@ func NewResendMailer(conf *environment.Environment) Service {
 }
 
 func (m *resendMailer) SendEmail(ctx context.Context, params SendParams) error {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+	}
+
 	emailParams := &resend.SendEmailRequest{
 		From:    params.From,
 		To:      []string{params.To},
@@ -47,9 +54,13 @@ func (m *resendMailer) SendEmail(ctx context.Context, params SendParams) error {
 }
 
 func (m *resendMailer) GetTemplate(ctx context.Context, templateName string) (string, error) {
-	_ = ctx
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
+	}
 	if strings.Contains(templateName, "..") {
-		return "", fmt.Errorf("invalid template name")
+		return "", errors.New("invalid template name")
 	}
 
 	filePath := fmt.Sprintf("templates/%s.html", templateName)

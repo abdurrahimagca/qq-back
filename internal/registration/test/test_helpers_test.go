@@ -57,8 +57,12 @@ func newRegistrationTestHarness(t *testing.T) *registrationTestHarness {
 	defer cancel()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:16-alpine",
-		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "postgres", "POSTGRES_DB": "qq_registration_test"},
+		Image: "postgres:16-alpine",
+		Env: map[string]string{
+			"POSTGRES_USER":     "postgres",
+			"POSTGRES_PASSWORD": "postgres",
+			"POSTGRES_DB":       "qq_registration_test",
+		},
 		ExposedPorts: []string{"5432/tcp"},
 		WaitingFor:   wait.ForListeningPort("5432/tcp").WithStartupTimeout(90 * time.Second),
 		AutoRemove:   true,
@@ -87,7 +91,8 @@ func newRegistrationTestHarness(t *testing.T) *registrationTestHarness {
 		t.Fatalf("failed to resolve container port: %v", err)
 	}
 
-	dsn := fmt.Sprintf("postgres://postgres:postgres@%s/qq_registration_test?sslmode=disable", net.JoinHostPort(host, port.Port()))
+	dsn := fmt.Sprintf(
+		"postgres://postgres:postgres@%s/qq_registration_test?sslmode=disable", net.JoinHostPort(host, port.Port()))
 
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -211,6 +216,9 @@ func useDeterministicRand(t *testing.T, data []byte) {
 func countOTPs(t *testing.T, pool *pgxpool.Pool, authID pgtype.UUID) int {
 	t.Helper()
 	var count int
-	require.NoError(t, pool.QueryRow(context.Background(), "SELECT COUNT(*) FROM auth_otp_codes WHERE auth_id = $1", authID).Scan(&count))
+	require.NoError(
+		t, pool.QueryRow(context.Background(),
+			"SELECT COUNT(*) FROM auth_otp_codes WHERE auth_id = $1", authID).Scan(&count),
+	)
 	return count
 }

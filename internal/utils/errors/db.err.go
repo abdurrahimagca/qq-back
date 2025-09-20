@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	SQL_UNIQUE_VIOLATION      = "23505"
-	SQL_FOREIGN_KEY_VIOLATION = "23503"
-	SQL_CHECK_VIOLATION       = "23514"
-	SQL_NOT_NULL_VIOLATION    = "23502"
+	SQLUniqueViolation     = "23505"
+	SQLForeignKeyViolation = "23503"
+	SQLCheckViolation      = "23514"
+	SQLNotNullViolation    = "23502"
 )
 
 type QQError struct {
@@ -32,29 +32,29 @@ func (e *QQError) Unwrap() error {
 }
 
 var errMap = map[string]*QQError{
-	SQL_UNIQUE_VIOLATION: {
+	SQLUniqueViolation: {
 		Message:    ErrUniqueViolation.Error(),
 		StatusCode: http.StatusConflict,
 		Original:   ErrUniqueViolation,
 	},
-	SQL_FOREIGN_KEY_VIOLATION: {
+	SQLForeignKeyViolation: {
 		Message:    ErrConstraintViolation.Error(),
 		StatusCode: http.StatusBadRequest,
 		Original:   ErrConstraintViolation,
 	},
-	SQL_CHECK_VIOLATION: {
+	SQLCheckViolation: {
 		Message:    ErrValidationError.Error(),
 		StatusCode: http.StatusBadRequest,
 		Original:   ErrValidationError,
 	},
-	SQL_NOT_NULL_VIOLATION: {
+	SQLNotNullViolation: {
 		Message:    ErrValidationError.Error(),
 		StatusCode: http.StatusBadRequest,
 		Original:   ErrValidationError,
 	},
 }
 
-func GetDbErrAsQQError(err error) *QQError {
+func GetDBErrAsQQError(err error) *QQError {
 	if err == nil {
 		return nil
 	}
@@ -104,18 +104,18 @@ func GetHumaErrorFromError(err error) huma.StatusError {
 	}
 
 	// Handle base errors
-	switch err {
-	case ErrNotFound:
+	switch {
+	case errors.Is(err, ErrNotFound):
 		return huma.Error404NotFound("Not found", err)
-	case ErrValidationError:
+	case errors.Is(err, ErrValidationError):
 		return huma.Error422UnprocessableEntity("Validation error", err)
-	case ErrInternalServer:
+	case errors.Is(err, ErrInternalServer):
 		return huma.Error500InternalServerError("Internal server error", err)
-	case ErrUniqueViolation:
+	case errors.Is(err, ErrUniqueViolation):
 		return huma.Error409Conflict("Unique violation", err)
-	case ErrConstraintViolation:
+	case errors.Is(err, ErrConstraintViolation):
 		return huma.Error400BadRequest("Constraint violation", err)
-	case ErrDuplicateRow:
+	case errors.Is(err, ErrDuplicateRow):
 		return huma.Error409Conflict("Duplicate row", err)
 	default:
 		return huma.Error500InternalServerError("Internal server error", err)

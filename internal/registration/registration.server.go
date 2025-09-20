@@ -8,16 +8,16 @@ import (
 )
 
 type registrationServer struct {
-	uc RegistrationUsecase
+	uc Usecase
 }
-type RegistrationServer interface {
+type Server interface {
 	SendOtpHandler(ctx context.Context, input *SendOtpInput) (*SendOtpOutput, error)
 	VerifyOtpHandler(ctx context.Context, input *VerifyOtpInput) (*VerifyOtpOutput, error)
 	RefreshTokensHandler(ctx context.Context, input *RefreshTokensInput) (*RefreshTokensOutput, error)
 	RegisterRegistrationEndpoints(api huma.API)
 }
 
-func NewRegistrationServer(uc RegistrationUsecase) RegistrationServer {
+func NewServer(uc Usecase) Server {
 	return &registrationServer{uc: uc}
 }
 

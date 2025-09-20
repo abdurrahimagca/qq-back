@@ -9,27 +9,27 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type RegistrationModule struct {
-	usecase RegistrationUsecase
-	server  RegistrationServer
+type Module struct {
+	usecase Usecase
+	server  Server
 }
 
-func NewRegistrationModule(
+func NewModule(
 	mailer mailport.Service,
 	authService auth.Service,
 	userService user.Service,
-	tokenService tokenport.Service,
 	pool *pgxpool.Pool,
-) *RegistrationModule {
-	usecase := NewRegistrationUsecase(mailer, authService, userService, pool, tokenService)
-	server := NewRegistrationServer(usecase)
+	tokenService tokenport.Service,
+) *Module {
+	usecase := NewUsecase(mailer, authService, userService, pool, tokenService)
+	server := NewServer(usecase)
 
-	return &RegistrationModule{
+	return &Module{
 		usecase: usecase,
 		server:  server,
 	}
 }
 
-func (rm *RegistrationModule) RegisterEndpoints(api huma.API) {
+func (rm *Module) RegisterEndpoints(api huma.API) {
 	rm.server.RegisterRegistrationEndpoints(api)
 }

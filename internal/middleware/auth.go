@@ -60,14 +60,14 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			http.Error(w, "Invalid user ID: "+err.Error(), http.StatusUnauthorized)
 			return
 		}
-		user, err := m.userService.GetUserByID(r.Context(), userUUID)
-		if err != nil {
-			http.Error(w, "User not found: "+err.Error(), http.StatusUnauthorized)
+		retrievedUser, userErr := m.userService.GetUserByID(r.Context(), userUUID)
+		if userErr != nil {
+			http.Error(w, "User not found: "+userErr.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		// Add user to context
-		ctx := WithUser(r.Context(), user)
+		ctx := WithUser(r.Context(), retrievedUser)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -110,17 +110,16 @@ func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
 				http.Error(w, "Invalid user ID: "+err.Error(), http.StatusUnauthorized)
 				return
 			}
-			user, err := m.userService.GetUserByID(r.Context(), userUUID)
-			if err != nil {
-				http.Error(w, "User not found: "+err.Error(), http.StatusUnauthorized)
+			retrievedUser, userErr := m.userService.GetUserByID(r.Context(), userUUID)
+			if userErr != nil {
+				http.Error(w, "User not found: "+userErr.Error(), http.StatusUnauthorized)
 				return
 			}
-			if err == nil {
-				// Add user to context
-				ctx := WithUser(r.Context(), user)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
+
+			// Add user to context
+			ctx := WithUser(r.Context(), retrievedUser)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
 		}
 
 		// Continue without user if anything fails

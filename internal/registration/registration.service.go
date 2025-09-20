@@ -5,6 +5,8 @@ import (
 
 	"strings"
 
+	"errors"
+
 	"github.com/abdurrahimagca/qq-back/internal/auth"
 	mail "github.com/abdurrahimagca/qq-back/internal/platform/mailer"
 	tokenport "github.com/abdurrahimagca/qq-back/internal/platform/token"
@@ -14,7 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type RegistrationUsecase interface {
+type Usecase interface {
 	RegisterOrLoginOTP(ctx context.Context, email string) (*bool, error)
 	VerifyOTPAndLogin(ctx context.Context, email string, otp string) (tokenport.GenerateTokenResult, error)
 	RefreshTokens(ctx context.Context, refreshToken string) (tokenport.GenerateTokenResult, error)
@@ -28,13 +30,13 @@ type registrationUsecase struct {
 	tokenService tokenport.Service
 }
 
-func NewRegistrationUsecase(
+func NewUsecase(
 	mailer mail.Service,
 	authService auth.Service,
 	userService user.Service,
 	pool *pgxpool.Pool,
 	tokenService tokenport.Service,
-) RegistrationUsecase {
+) Usecase {
 	return &registrationUsecase{
 		mailer:       mailer,
 		authService:  authService,
@@ -51,7 +53,7 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 	}
 	defer func() {
 		if tx != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		}
 	}()
 
@@ -60,7 +62,7 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 	var isNewUser bool
 
 	foundUser, err := txUserService.GetUserByEmail(ctx, emailAddr)
-	if err != nil && err != qqerrors.ErrNotFound {
+	if err != nil && !errors.Is(err, qqerrors.ErrNotFound) {
 		return nil, err
 	}
 
@@ -72,9 +74,9 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 
 	var authID pgtype.UUID
 	if !foundUser.ID.Valid {
-		authIDPtr, err := txAuthService.CreateNewAuthForOTPLogin(ctx, emailAddr)
-		if err != nil {
-			return nil, err
+		authIDPtr, createAuthErr := txAuthService.CreateNewAuthForOTPLogin(ctx, emailAddr)
+		if createAuthErr != nil {
+			return nil, createAuthErr
 		}
 		authID = *authIDPtr
 
@@ -101,8 +103,8 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 		return nil, err
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return nil, commitErr
 	}
 	tx = nil
 
@@ -128,7 +130,7 @@ func (uc *registrationUsecase) VerifyOTPAndLogin(
 	}
 	defer func() {
 		if tx != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		}
 	}()
 
@@ -150,8 +152,8 @@ func (uc *registrationUsecase) VerifyOTPAndLogin(
 		return tokenport.GenerateTokenResult{}, err
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return tokenport.GenerateTokenResult{}, err
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return tokenport.GenerateTokenResult{}, commitErr
 	}
 	tx = nil
 
@@ -180,8 +182,8 @@ func (uc *registrationUsecase) RefreshTokens(
 	}
 
 	userUUID := pgtype.UUID{}
-	if err := userUUID.Scan(userID); err != nil {
-		return tokenport.GenerateTokenResult{}, err
+	if scanErr := userUUID.Scan(userID); scanErr != nil {
+		return tokenport.GenerateTokenResult{}, scanErr
 	}
 	user, err := uc.userService.GetUserByID(ctx, userUUID)
 	if err != nil {

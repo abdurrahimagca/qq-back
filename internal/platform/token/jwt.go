@@ -2,6 +2,7 @@ package token
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,12 @@ func NewJWTTokenService(conf *environment.Environment) Service {
 }
 
 func (j *jwtTokenService) GenerateTokens(ctx context.Context, params GenerateTokenParams) (GenerateTokenResult, error) {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return GenerateTokenResult{}, err
+		}
+	}
+
 	now := time.Now()
 	accessTokenClaims := &Claims{
 		UserID: params.UserID,
@@ -64,6 +71,11 @@ func (j *jwtTokenService) GenerateTokens(ctx context.Context, params GenerateTok
 }
 
 func (j *jwtTokenService) ValidateToken(ctx context.Context, params ValidateTokenParams) (ValidateTokenResult, error) {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return ValidateTokenResult{}, err
+		}
+	}
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(params.Token, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -77,7 +89,7 @@ func (j *jwtTokenService) ValidateToken(ctx context.Context, params ValidateToke
 	}
 
 	if !token.Valid {
-		return ValidateTokenResult{}, fmt.Errorf("invalid token")
+		return ValidateTokenResult{}, errors.New("invalid token")
 	}
 
 	return ValidateTokenResult{

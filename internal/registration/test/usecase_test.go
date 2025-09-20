@@ -21,10 +21,10 @@ func newRegistrationUsecaseForTest(
 	h *registrationTestHarness,
 	mailSvc *fakeMailer,
 	tokenSvc *fakeTokenService,
-) registration.RegistrationUsecase {
+) registration.Usecase {
 	authService := auth.NewService(h.authRepo)
 	userService := user.NewService(h.userRepo)
-	return registration.NewRegistrationUsecase(mailSvc, authService, userService, h.pool, tokenSvc)
+	return registration.NewUsecase(mailSvc, authService, userService, h.pool, tokenSvc)
 }
 
 func TestRegisterOrLoginOTP_ExistingUser(t *testing.T) {

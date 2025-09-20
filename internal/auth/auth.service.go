@@ -49,7 +49,7 @@ func (s *service) GenerateAndSaveOTPForAuth(ctx context.Context, authID pgtype.U
 	otpCode := strings.ToUpper(hex.EncodeToString(randomBytes))
 	otpHash := sha256.Sum256([]byte(otpCode))
 
-	if err := s.repo.CreateOTP(ctx, authID, hex.EncodeToString(otpHash[:])); err != nil {
+	if err = s.repo.CreateOTP(ctx, authID, hex.EncodeToString(otpHash[:])); err != nil {
 		return "", err
 	}
 
@@ -66,7 +66,7 @@ func (s *service) KillOrphanedOTPs(ctx context.Context, email string) error {
 
 func (s *service) VerifyOTP(ctx context.Context, email string, otpCode string) error {
 	otpHash := sha256.Sum256([]byte(otpCode))
-	usr, err := s.repo.GetUserIdAndEmailByOtpCode(ctx, hex.EncodeToString(otpHash[:]))
+	usr, err := s.repo.GetUserIDAndEmailByOTPCode(ctx, hex.EncodeToString(otpHash[:]))
 	if err != nil {
 		return err
 	}

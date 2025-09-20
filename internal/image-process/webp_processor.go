@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
+	_ "image/gif"  // register GIF decoder
+	_ "image/jpeg" // register JPEG decoder
+	_ "image/png"  // register PNG decoder
 	"io"
 
 	"github.com/kolesa-team/go-webp/encoder"
@@ -54,7 +54,7 @@ func (p *WebpProcessor) ImageProcessor(ctx context.Context, file io.Reader) (*Pr
 		return nil, err
 	}
 
-	if err := webp.Encode(&buf, thumb, options); err != nil {
+	if err = webp.Encode(&buf, thumb, options); err != nil {
 		return nil, err
 	}
 

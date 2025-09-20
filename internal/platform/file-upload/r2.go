@@ -24,20 +24,21 @@ type R2Service struct {
 }
 
 func NewR2Service(environment environment.R2Environment, processor imageprocess.Processor) Uploader {
-	accessKeyId := environment.AccessKeyID
+	accessKeyID := environment.AccessKeyID
 	accessKeySecret := environment.SecretAccessKey
-	accountId := environment.AccountID
+	accountID := environment.AccountID
+	logger := slog.Default()
 
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, accessKeySecret, "")),
 		config.WithRegion("auto"),
 	)
 	if err != nil {
-		slog.Error("Error creating AWS config", "error", err)
+		logger.Error("Error creating AWS config", "error", err)
 	}
 
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
+		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID))
 	})
 
 	if processor == nil {

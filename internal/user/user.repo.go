@@ -40,7 +40,7 @@ func (r *pgxRepository) WithTx(tx pgx.Tx) Repository {
 func (r *pgxRepository) GetUserByID(ctx context.Context, userID pgtype.UUID) (*db.User, error) {
 	dbUser, err := r.q.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, qqerrors.GetDbErrAsQQError(err)
+		return nil, qqerrors.GetDBErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
@@ -52,21 +52,21 @@ func (r *pgxRepository) CreateUserWithAuthID(
 		Username: username,
 	})
 	if err != nil {
-		return nil, qqerrors.GetDbErrAsQQError(err)
+		return nil, qqerrors.GetDBErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
 func (r *pgxRepository) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
 	dbUser, err := r.q.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, qqerrors.GetDbErrAsQQError(err)
+		return nil, qqerrors.GetDBErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
 func (r *pgxRepository) UpdateUser(ctx context.Context, user db.UpdateUserParams) (*db.User, error) {
 	dbUser, err := r.q.UpdateUser(ctx, user)
 	if err != nil {
-		return nil, qqerrors.GetDbErrAsQQError(err)
+		return nil, qqerrors.GetDBErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
@@ -74,7 +74,7 @@ func (r *pgxRepository) UpdateUser(ctx context.Context, user db.UpdateUserParams
 func (r *pgxRepository) UserNameExists(ctx context.Context, username string) (bool, error) {
 	exists, err := r.q.UserNameExists(ctx, username)
 	if err != nil {
-		return false, qqerrors.GetDbErrAsQQError(err)
+		return false, qqerrors.GetDBErrAsQQError(err)
 	}
 	return exists > 0, nil
 }

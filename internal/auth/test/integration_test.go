@@ -218,7 +218,7 @@ func TestPgxRepository_CreateOTP(t *testing.T) {
 	require.Equal(t, hash, stored)
 }
 
-func TestPgxRepository_GetUserIdAndEmailByOtpCode(t *testing.T) {
+func TestPgxRepository_GetUserIDAndEmailByOTPCode(t *testing.T) {
 	h := setupIntegrationHarness(t)
 
 	ctx := context.Background()
@@ -234,13 +234,13 @@ func TestPgxRepository_GetUserIdAndEmailByOtpCode(t *testing.T) {
 	err = h.repo.CreateOTP(ctx, *authID, hash)
 	require.NoError(t, err)
 
-	row, err := h.repo.GetUserIdAndEmailByOtpCode(ctx, hash)
+	row, err := h.repo.GetUserIDAndEmailByOTPCode(ctx, hash)
 	require.NoError(t, err)
 	require.Equal(t, email, row.Email)
 	require.Equal(t, uuidToString(*authID), uuidToString(row.AuthID))
 	require.Equal(t, uuidToString(userID), uuidToString(row.ID))
 
-	_, err = h.repo.GetUserIdAndEmailByOtpCode(ctx, "missing")
+	_, err = h.repo.GetUserIDAndEmailByOTPCode(ctx, "missing")
 	require.ErrorIs(t, err, auth.ErrNotFound)
 }
 
@@ -303,13 +303,13 @@ func TestPgxRepository_WithTx_Rollback(t *testing.T) {
 	require.Zero(t, count)
 }
 
-func TestPgxRepository_GetUserIdAndEmailByOtpCode_DBError(t *testing.T) {
+func TestPgxRepository_GetUserIDAndEmailByOTPCode_DBError(t *testing.T) {
 	h := setupIntegrationHarness(t)
 
 	h.pool.Close()
 	h.pool = nil
 
-	_, err := h.repo.GetUserIdAndEmailByOtpCode(context.Background(), "deadbeef")
+	_, err := h.repo.GetUserIDAndEmailByOTPCode(context.Background(), "deadbeef")
 	require.Error(t, err)
 	var qqErr *qqerrors.QQError
 	require.ErrorAs(t, err, &qqErr)

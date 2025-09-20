@@ -92,7 +92,7 @@ func (f *fakeRepository) CreateOTP(ctx context.Context, authID pgtype.UUID, otpH
 	return nil
 }
 
-func (f *fakeRepository) GetUserIdAndEmailByOtpCode(
+func (f *fakeRepository) GetUserIDAndEmailByOTPCode(
 	ctx context.Context, otpHash string) (db.GetUserIdAndEmailByOtpCodeRow, error) {
 	f.state.mu.Lock()
 	defer f.state.mu.Unlock()

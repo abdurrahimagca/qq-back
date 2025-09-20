@@ -2,13 +2,14 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/auth"
 	"github.com/abdurrahimagca/qq-back/internal/environment"
-	mail "github.com/abdurrahimagca/qq-back/internal/platform/mailer"
-	mailport "github.com/abdurrahimagca/qq-back/internal/platform/mailer"
+	"github.com/abdurrahimagca/qq-back/internal/platform/mailer"
 	tokenport "github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/registration"
 	"github.com/abdurrahimagca/qq-back/internal/user"
@@ -23,15 +24,17 @@ type Bootstrap struct {
 	api  huma.API
 	mux  *http.ServeMux
 
-	mailer       mailport.Service
+	mailer       mailer.Service
 	authService  auth.Service
 	userService  user.Service
 	tokenService tokenport.Service
+	logger       *slog.Logger
 }
 
 func New(env *environment.Environment) *Bootstrap {
 	b := &Bootstrap{
-		env: env,
+		env:    env,
+		logger: slog.Default(),
 	}
 
 	b.initInfrastructure()
@@ -44,7 +47,7 @@ func (b *Bootstrap) initInfrastructure() {
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, b.env.DatabaseURL)
 	if err != nil {
-		slog.Error("Error creating pool", "error", err)
+		b.logger.Error("Error creating pool", "error", err)
 	}
 	b.pool = pool
 
@@ -57,9 +60,9 @@ func (b *Bootstrap) initInfrastructure() {
 }
 
 func (b *Bootstrap) setupDocsEndpoint() {
-	b.mux.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
+	b.mux.HandleFunc("/docs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<!doctype html>
+		_, _ = w.Write([]byte(`<!doctype html>
 						<html>
 						<head>
 							<title>API Reference</title>
@@ -83,17 +86,17 @@ func (b *Bootstrap) initDependencies() {
 	userRepo := user.NewPgxRepository(b.pool)
 	b.authService = auth.NewService(authRepo)
 	b.userService = user.NewService(userRepo)
-	b.mailer = mail.NewResendMailer(b.env)
+	b.mailer = mailer.NewResendMailer(b.env)
 	b.tokenService = tokenport.NewJWTTokenService(b.env)
 }
 
 func (b *Bootstrap) registrationModule() {
-	rm := registration.NewRegistrationModule(
+	rm := registration.NewModule(
 		b.mailer,
 		b.authService,
 		b.userService,
-		b.tokenService,
 		b.pool,
+		b.tokenService,
 	)
 	rm.RegisterEndpoints(b.api)
 }
@@ -101,10 +104,25 @@ func (b *Bootstrap) registrationModule() {
 func (b *Bootstrap) Bootstrap() {
 	b.registrationModule()
 }
-
 func (b *Bootstrap) StartServer() {
-	slog.Info("Server starting on :" + b.env.API.Port)
-	slog.Error("Error starting server", "error", http.ListenAndServe(":"+b.env.API.Port, b.mux))
+	readTimeout := 15
+	readHeaderTimeout := 5
+	writeTimeout := 15
+	idleTimeout := 60
+
+	srv := &http.Server{
+		Addr:              ":" + b.env.API.Port,
+		Handler:           b.mux,
+		ReadTimeout:       time.Duration(readTimeout) * time.Second,
+		ReadHeaderTimeout: time.Duration(readHeaderTimeout) * time.Second,
+		WriteTimeout:      time.Duration(writeTimeout) * time.Second,
+		IdleTimeout:       time.Duration(idleTimeout) * time.Second,
+	}
+
+	b.logger.Info("Server starting", "address", srv.Addr)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		b.logger.Error("Error starting server", "error", err)
+	}
 }
 
 func (b *Bootstrap) Close() {

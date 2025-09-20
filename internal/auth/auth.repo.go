@@ -15,7 +15,7 @@ type Repository interface {
 	WithTx(tx pgx.Tx) Repository
 	CreateAuthForOTPLogin(ctx context.Context, email string) (*pgtype.UUID, error)
 	CreateOTP(ctx context.Context, userID pgtype.UUID, otpHash string) error
-	GetUserIdAndEmailByOtpCode(ctx context.Context, otpHash string) (db.GetUserIdAndEmailByOtpCodeRow, error)
+	GetUserIDAndEmailByOTPCode(ctx context.Context, otpHash string) (db.GetUserIdAndEmailByOtpCodeRow, error)
 	KillOrphanedOTPs(ctx context.Context, email string) error
 	KillOrphanedOTPsByUserID(ctx context.Context, userID pgtype.UUID) error
 }
@@ -42,7 +42,7 @@ func (r *pgxRepository) CreateAuthForOTPLogin(ctx context.Context, email string)
 		Provider: "email_otp",
 	})
 	if err != nil {
-		return nil, qqerrors.GetDbErrAsQQError(err)
+		return nil, qqerrors.GetDBErrAsQQError(err)
 	}
 	return &id, nil
 }
@@ -53,12 +53,12 @@ func (r *pgxRepository) CreateOTP(ctx context.Context, userID pgtype.UUID, otpHa
 		Code:   otpHash,
 	})
 	if err != nil {
-		return qqerrors.GetDbErrAsQQError(err)
+		return qqerrors.GetDBErrAsQQError(err)
 	}
 	return nil
 }
 
-func (r *pgxRepository) GetUserIdAndEmailByOtpCode(
+func (r *pgxRepository) GetUserIDAndEmailByOTPCode(
 	ctx context.Context,
 	otpHash string,
 ) (db.GetUserIdAndEmailByOtpCodeRow, error) {
@@ -67,14 +67,14 @@ func (r *pgxRepository) GetUserIdAndEmailByOtpCode(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return db.GetUserIdAndEmailByOtpCodeRow{}, ErrNotFound
 		}
-		return db.GetUserIdAndEmailByOtpCodeRow{}, qqerrors.GetDbErrAsQQError(err)
+		return db.GetUserIdAndEmailByOtpCodeRow{}, qqerrors.GetDBErrAsQQError(err)
 	}
 	return row, nil
 }
 func (r *pgxRepository) KillOrphanedOTPs(ctx context.Context, email string) error {
 	err := r.q.DeleteOtpCodesByEmail(ctx, email)
 	if err != nil {
-		return qqerrors.GetDbErrAsQQError(err)
+		return qqerrors.GetDBErrAsQQError(err)
 	}
 	return nil
 }
@@ -82,7 +82,7 @@ func (r *pgxRepository) KillOrphanedOTPs(ctx context.Context, email string) erro
 func (r *pgxRepository) KillOrphanedOTPsByUserID(ctx context.Context, userID pgtype.UUID) error {
 	err := r.q.DeleteOtpCodesByUserID(ctx, userID)
 	if err != nil {
-		return qqerrors.GetDbErrAsQQError(err)
+		return qqerrors.GetDBErrAsQQError(err)
 	}
 	return nil
 }
