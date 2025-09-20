@@ -6,12 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/abdurrahimagca/qq-back/internal/auth"
 	"github.com/abdurrahimagca/qq-back/internal/environment"
-	mail "github.com/abdurrahimagca/qq-back/internal/platform/mailer"
-	tokenport "github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/registration"
-	"github.com/abdurrahimagca/qq-back/internal/user"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
@@ -30,19 +26,7 @@ func main() {
 		log.Fatal("Error creating pool", err)
 	}
 	defer pool.Close()
-	authRepo := auth.NewPgxRepository(pool)
-	userRepo := user.NewPgxRepository(pool)
-	authService := auth.NewService(authRepo)
-	userService := user.NewService(userRepo)
-	mailerService := mail.NewResendMailer(environment)
-	tokenService := tokenport.NewJWTTokenService(environment)
-	registrationUsecase := registration.NewRegistrationUsecase(
-		mailerService,
-		authService,
-		userService,
-		pool,
-		tokenService,
-	)
+	
 	mux := http.NewServeMux()
 	humaConfig := huma.DefaultConfig(environment.API.Title, environment.API.Version)
 	humaConfig.DocsPath = "" 
@@ -67,8 +51,8 @@ func main() {
 						</body>
 						</html>`))
 	})
-	registrationServer := registration.NewRegistrationServer(registrationUsecase)
-	registrationServer.RegisterRegistrationEndpoints(api)
+	registrationInit := registration.NewRegistrationInit()
+	registrationInit.Factory(pool, environment, api)
 
 	log.Println("Server starting on :" + environment.API.Port)
 	log.Fatal(http.ListenAndServe(":"+environment.API.Port, mux))

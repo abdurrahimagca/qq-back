@@ -19,6 +19,7 @@ var operations = map[string]huma.Operation{
 		Summary: "Send OTP code to email for existing users or create new user account",
 		Description: "Send OTP code to email for existing users or create new user account",
 		OperationID: SendOtp,
+		Errors: moduleErrors,
 		Tags: moduleTags,
 	},
 	VerifyOtp: {
@@ -27,6 +28,7 @@ var operations = map[string]huma.Operation{
 		Summary: "Verify OTP code",
 		Description: "Verify OTP code",
 		OperationID: VerifyOtp,
+		Errors: moduleErrors,
 		Tags: moduleTags,
 	},
 	RefreshTokens: {
@@ -35,13 +37,14 @@ var operations = map[string]huma.Operation{
 		Summary: "Refresh tokens",
 		Description: "Refresh tokens",
 		OperationID: RefreshTokens,
+		Errors: moduleErrors,
 		Tags: moduleTags,
 	},
 }
 
 type SendOtpInput struct {
 	Body struct {
-		Email string `json:"email required format:email"`
+		Email string `json:"email" doc:"Email address of the user" required:"true" format:"email"`
 	}
 }
 
@@ -54,8 +57,8 @@ type SendOtpOutput struct {
 
 type VerifyOtpInput struct {
 	Body struct {
-	Email string `json:"email required format:email"`
-	OtpCode string `json:"otpCode required minLength:6 maxLength:6"`
+	Email string `json:"email" doc:"Email address of the user" required:"true" format:"email"`
+	OtpCode string `json:"otpCode" doc:"OTP code received via email" format:"number" required:"true" minLength:"6" maxLength:"6"`
 }
 }
 
@@ -68,7 +71,7 @@ type VerifyOtpOutput struct {
 
 type RefreshTokensInput struct {
 	Body struct {
-		RefreshToken string `json:"refreshToken required"`
+		RefreshToken string `json:"refreshToken" doc:"Refresh token" required:"true"`
 	}
 }
 

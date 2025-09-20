@@ -72,3 +72,4 @@ func (s *registrationServer) RegisterRegistrationEndpoints(api huma.API) {
 	huma.Register(api, operations[VerifyOtp], s.VerifyOtpHandler)
 	huma.Register(api, operations[RefreshTokens], s.RefreshTokensHandler)
 }
+
