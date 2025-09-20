@@ -2,9 +2,10 @@ package user
 
 import (
 	"context"
-	"fmt"
+		"fmt"
 
 	"github.com/abdurrahimagca/qq-back/internal/db"
+	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -47,7 +48,7 @@ func (s *service) GetUserByID(ctx context.Context, userID pgtype.UUID) (*db.User
 func (s *service) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
 	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, err 
 	}
 	return user, nil
 }
@@ -56,16 +57,10 @@ func (s *service) UpdateUser(ctx context.Context, user db.UpdateUserParams) (*db
 	if user.Username.Valid {
 		available, err := s.UserNameAvailable(ctx, user.Username.String)
 		if err != nil {
-			fmt.Println("Error checking username availability:", err)
 			return nil, err
 		}
 		if !available {
-			fmt.Println("Username already exists:", user.Username.String)
-			return nil, ErrUsernameAlreadyExists
-		}
-		if err != nil {
-			fmt.Println("Error checking username regex:", err)
-			return nil, err
+			return nil, qqerrors.ErrUniqueViolation	
 		}
 	}
 

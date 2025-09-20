@@ -3,9 +3,9 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/abdurrahimagca/qq-back/internal/db"
+	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -42,7 +42,7 @@ func (r *pgxRepository) CreateAuthForOTPLogin(ctx context.Context, email string)
 		Provider: "email_otp",
 	})
 	if err != nil {
-		return nil, fmt.Errorf("CreateOtpAuth failed: %w", err)
+	   return nil, qqerrors.GetDbErrAsQQError(err)
 	}
 	return &id, nil
 }
@@ -53,7 +53,7 @@ func (r *pgxRepository) CreateOTP(ctx context.Context, userID pgtype.UUID, otpHa
 		Code:   otpHash,
 	})
 	if err != nil {
-		return fmt.Errorf("CreateOTP failed: %w", err)
+		return qqerrors.GetDbErrAsQQError(err)
 	}
 	return nil
 }
@@ -64,14 +64,14 @@ func (r *pgxRepository) GetUserIdAndEmailByOtpCode(ctx context.Context, otpHash 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return db.GetUserIdAndEmailByOtpCodeRow{}, ErrNotFound
 		}
-		return db.GetUserIdAndEmailByOtpCodeRow{}, fmt.Errorf("GetUserIdAndEmailByOtpCode failed: %w", err)
+		return db.GetUserIdAndEmailByOtpCodeRow{}, qqerrors.GetDbErrAsQQError(err)
 	}
 	return row, nil
 }
 func (r *pgxRepository) KillOrphanedOTPs(ctx context.Context, email string) error {
 	 err := r.q.DeleteOtpCodesByEmail(ctx, email)
 	if err != nil {
-		return fmt.Errorf("KillOrphanedOTPs failed: %w", err)
+		return qqerrors.GetDbErrAsQQError(err)
 	}
 	return nil
 }
@@ -79,7 +79,7 @@ func (r *pgxRepository) KillOrphanedOTPs(ctx context.Context, email string) erro
 func (r *pgxRepository) KillOrphanedOTPsByUserID(ctx context.Context, userID pgtype.UUID) error {
 	err := r.q.DeleteOtpCodesByUserID(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("DeleteOtpCodesByUserID failed: %w", err)
+		return qqerrors.GetDbErrAsQQError(err)
 	}
 	return nil
 }

@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"errors"
+	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
 
 	"github.com/abdurrahimagca/qq-back/internal/db"
 
@@ -39,10 +39,7 @@ func (r *pgxRepository) WithTx(tx pgx.Tx) Repository {
 func (r *pgxRepository) GetUserByID(ctx context.Context, userID pgtype.UUID) (*db.User, error) {
 	dbUser, err := r.q.GetUserByID(ctx, userID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, err
+		return nil, qqerrors.GetDbErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
@@ -55,21 +52,21 @@ func (r *pgxRepository) CreateUserWithAuthID(ctx context.Context, authID pgtype.
 		Username: username,
 	})
 	if err != nil {
-		return nil, err
+		return nil, qqerrors.GetDbErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
 func (r *pgxRepository) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
 	dbUser, err := r.q.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return nil, qqerrors.GetDbErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
 func (r *pgxRepository) UpdateUser(ctx context.Context, user db.UpdateUserParams) (*db.User, error) {
 	dbUser, err := r.q.UpdateUser(ctx, user)
 	if err != nil {
-		return nil, err
+		return nil, qqerrors.GetDbErrAsQQError(err)
 	}
 	return &dbUser, nil
 }
@@ -77,7 +74,7 @@ func (r *pgxRepository) UpdateUser(ctx context.Context, user db.UpdateUserParams
 func (r *pgxRepository) UserNameExists(ctx context.Context, username string) (bool, error) {
 	exists, err := r.q.UserNameExists(ctx, username)
 	if err != nil {
-		return false, err
+		return false, qqerrors.GetDbErrAsQQError(err)
 	}
 	return exists > 0, nil
 }
