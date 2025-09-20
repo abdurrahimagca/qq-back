@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+
 	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
 
 	"github.com/abdurrahimagca/qq-back/internal/db"
@@ -44,9 +45,8 @@ func (r *pgxRepository) GetUserByID(ctx context.Context, userID pgtype.UUID) (*d
 	return &dbUser, nil
 }
 
-
-
-func (r *pgxRepository) CreateUserWithAuthID(ctx context.Context, authID pgtype.UUID, username string) (*db.User, error) {
+func (r *pgxRepository) CreateUserWithAuthID(
+	ctx context.Context, authID pgtype.UUID, username string) (*db.User, error) {
 	dbUser, err := r.q.InsertUser(ctx, db.InsertUserParams{
 		AuthID:   authID,
 		Username: username,
@@ -78,4 +78,3 @@ func (r *pgxRepository) UserNameExists(ctx context.Context, username string) (bo
 	}
 	return exists > 0, nil
 }
-

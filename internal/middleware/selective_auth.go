@@ -27,7 +27,7 @@ func (m *SelectiveAuthMiddleware) Handler(next http.Handler) http.Handler {
 				return
 			}
 		}
-		
+
 		// Apply auth middleware for protected routes
 		m.authMiddleware.RequireAuth(next).ServeHTTP(w, r)
 	})

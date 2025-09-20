@@ -1,16 +1,18 @@
-package qqerrors
+package qqerrors_test
 
 import (
 	"errors"
 	"net/http"
 	"testing"
 
+	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestQQError_Error(t *testing.T) {
-	serr := &QQError{
+	serr := &qqerrors.QQError{
 		Message:    "test error",
 		StatusCode: http.StatusBadRequest,
 		Original:   errors.New("original error"),
@@ -23,7 +25,7 @@ func TestQQError_Error(t *testing.T) {
 
 func TestQQError_Unwrap(t *testing.T) {
 	originalErr := errors.New("original error")
-	serr := &QQError{
+	serr := &qqerrors.QQError{
 		Message:    "test error",
 		StatusCode: http.StatusBadRequest,
 		Original:   originalErr,
@@ -35,46 +37,46 @@ func TestQQError_Unwrap(t *testing.T) {
 }
 
 func TestGetDbErrAsQQError_NilError(t *testing.T) {
-	result := GetDbErrAsQQError(nil)
+	result := qqerrors.GetDbErrAsQQError(nil)
 	if result != nil {
 		t.Errorf("Expected nil, got %v", result)
 	}
 }
 
 func TestGetDbErrAsQQError_NoRows(t *testing.T) {
-	result := GetDbErrAsQQError(pgx.ErrNoRows)
+	result := qqerrors.GetDbErrAsQQError(pgx.ErrNoRows)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
 	}
 
-	if result.Message != ErrNotFound.Error() {
-		t.Errorf("Expected '%s', got '%s'", ErrNotFound.Error(), result.Message)
+	if result.Message != qqerrors.ErrNotFound.Error() {
+		t.Errorf("Expected '%s', got '%s'", qqerrors.ErrNotFound.Error(), result.Message)
 	}
 
 	if result.StatusCode != http.StatusNotFound {
 		t.Errorf("Expected %d, got %d", http.StatusNotFound, result.StatusCode)
 	}
 
-	if result.Original != ErrNotFound {
-		t.Errorf("Expected ErrNotFound, got %v", result.Original)
+	if result.Original != qqerrors.ErrNotFound {
+		t.Errorf("Expected qqerrors.ErrNotFound, got %v", result.Original)
 	}
 }
 
 func TestGetDbErrAsQQError_UniqueViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    SQL_UNIQUE_VIOLATION,
+		Code:    qqerrors.SQL_UNIQUE_VIOLATION,
 		Message: "duplicate key value violates unique constraint",
 	}
 
-	result := GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDbErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
 	}
 
-	if result.Message != ErrUniqueViolation.Error() {
-		t.Errorf("Expected '%s', got '%s'", ErrUniqueViolation.Error(), result.Message)
+	if result.Message != qqerrors.ErrUniqueViolation.Error() {
+		t.Errorf("Expected '%s', got '%s'", qqerrors.ErrUniqueViolation.Error(), result.Message)
 	}
 
 	if result.StatusCode != http.StatusConflict {
@@ -84,18 +86,18 @@ func TestGetDbErrAsQQError_UniqueViolation(t *testing.T) {
 
 func TestGetDbErrAsQQError_ForeignKeyViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    SQL_FOREIGN_KEY_VIOLATION,
+		Code:    qqerrors.SQL_FOREIGN_KEY_VIOLATION,
 		Message: "foreign key constraint violation",
 	}
 
-	result := GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDbErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
 	}
 
-	if result.Message != ErrConstraintViolation.Error() {
-		t.Errorf("Expected '%s', got '%s'", ErrConstraintViolation.Error(), result.Message)
+	if result.Message != qqerrors.ErrConstraintViolation.Error() {
+		t.Errorf("Expected '%s', got '%s'", qqerrors.ErrConstraintViolation.Error(), result.Message)
 	}
 
 	if result.StatusCode != http.StatusBadRequest {
@@ -105,18 +107,18 @@ func TestGetDbErrAsQQError_ForeignKeyViolation(t *testing.T) {
 
 func TestGetDbErrAsQQError_CheckViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    SQL_CHECK_VIOLATION,
+		Code:    qqerrors.SQL_CHECK_VIOLATION,
 		Message: "check constraint violation",
 	}
 
-	result := GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDbErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
 	}
 
-	if result.Message != ErrValidationError.Error() {
-		t.Errorf("Expected '%s', got '%s'", ErrValidationError.Error(), result.Message)
+	if result.Message != qqerrors.ErrValidationError.Error() {
+		t.Errorf("Expected '%s', got '%s'", qqerrors.ErrValidationError.Error(), result.Message)
 	}
 
 	if result.StatusCode != http.StatusBadRequest {
@@ -126,18 +128,18 @@ func TestGetDbErrAsQQError_CheckViolation(t *testing.T) {
 
 func TestGetDbErrAsQQError_NotNullViolation(t *testing.T) {
 	pgErr := &pgconn.PgError{
-		Code:    SQL_NOT_NULL_VIOLATION,
+		Code:    qqerrors.SQL_NOT_NULL_VIOLATION,
 		Message: "not null constraint violation",
 	}
 
-	result := GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDbErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
 	}
 
-	if result.Message != ErrValidationError.Error() {
-		t.Errorf("Expected '%s', got '%s'", ErrValidationError.Error(), result.Message)
+	if result.Message != qqerrors.ErrValidationError.Error() {
+		t.Errorf("Expected '%s', got '%s'", qqerrors.ErrValidationError.Error(), result.Message)
 	}
 
 	if result.StatusCode != http.StatusBadRequest {
@@ -151,7 +153,7 @@ func TestGetDbErrAsQQError_UnknownPgError(t *testing.T) {
 		Message: "unknown database error",
 	}
 
-	result := GetDbErrAsQQError(pgErr)
+	result := qqerrors.GetDbErrAsQQError(pgErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -170,7 +172,7 @@ func TestGetDbErrAsQQError_UnknownPgError(t *testing.T) {
 func TestGetDbErrAsQQError_GenericError(t *testing.T) {
 	genericErr := errors.New("some generic error")
 
-	result := GetDbErrAsQQError(genericErr)
+	result := qqerrors.GetDbErrAsQQError(genericErr)
 
 	if result == nil {
 		t.Fatal("Expected SError, got nil")
@@ -187,7 +189,7 @@ func TestGetDbErrAsQQError_GenericError(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_ErrNotFound(t *testing.T) {
-	result := GetHumaErrorFromError(ErrNotFound)
+	result := qqerrors.GetHumaErrorFromError(qqerrors.ErrNotFound)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -203,7 +205,7 @@ func TestGetHumaErrorFromError_ErrNotFound(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_ErrValidationError(t *testing.T) {
-	result := GetHumaErrorFromError(ErrValidationError)
+	result := qqerrors.GetHumaErrorFromError(qqerrors.ErrValidationError)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -219,7 +221,7 @@ func TestGetHumaErrorFromError_ErrValidationError(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_ErrInternalServer(t *testing.T) {
-	result := GetHumaErrorFromError(ErrInternalServer)
+	result := qqerrors.GetHumaErrorFromError(qqerrors.ErrInternalServer)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -235,7 +237,7 @@ func TestGetHumaErrorFromError_ErrInternalServer(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_ErrUniqueViolation(t *testing.T) {
-	result := GetHumaErrorFromError(ErrUniqueViolation)
+	result := qqerrors.GetHumaErrorFromError(qqerrors.ErrUniqueViolation)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -251,7 +253,7 @@ func TestGetHumaErrorFromError_ErrUniqueViolation(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_ErrConstraintViolation(t *testing.T) {
-	result := GetHumaErrorFromError(ErrConstraintViolation)
+	result := qqerrors.GetHumaErrorFromError(qqerrors.ErrConstraintViolation)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -267,7 +269,7 @@ func TestGetHumaErrorFromError_ErrConstraintViolation(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_ErrDuplicateRow(t *testing.T) {
-	result := GetHumaErrorFromError(ErrDuplicateRow)
+	result := qqerrors.GetHumaErrorFromError(qqerrors.ErrDuplicateRow)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -284,7 +286,7 @@ func TestGetHumaErrorFromError_ErrDuplicateRow(t *testing.T) {
 
 func TestGetHumaErrorFromError_UnknownError(t *testing.T) {
 	unknownErr := errors.New("unknown error")
-	result := GetHumaErrorFromError(unknownErr)
+	result := qqerrors.GetHumaErrorFromError(unknownErr)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")
@@ -300,7 +302,7 @@ func TestGetHumaErrorFromError_UnknownError(t *testing.T) {
 }
 
 func TestGetHumaErrorFromError_NilError(t *testing.T) {
-	result := GetHumaErrorFromError(nil)
+	result := qqerrors.GetHumaErrorFromError(nil)
 
 	if result == nil {
 		t.Fatal("Expected huma.StatusError, got nil")

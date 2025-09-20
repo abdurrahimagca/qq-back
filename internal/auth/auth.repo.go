@@ -42,7 +42,7 @@ func (r *pgxRepository) CreateAuthForOTPLogin(ctx context.Context, email string)
 		Provider: "email_otp",
 	})
 	if err != nil {
-	   return nil, qqerrors.GetDbErrAsQQError(err)
+		return nil, qqerrors.GetDbErrAsQQError(err)
 	}
 	return &id, nil
 }
@@ -58,7 +58,10 @@ func (r *pgxRepository) CreateOTP(ctx context.Context, userID pgtype.UUID, otpHa
 	return nil
 }
 
-func (r *pgxRepository) GetUserIdAndEmailByOtpCode(ctx context.Context, otpHash string) (db.GetUserIdAndEmailByOtpCodeRow, error) {
+func (r *pgxRepository) GetUserIdAndEmailByOtpCode(
+	ctx context.Context,
+	otpHash string,
+) (db.GetUserIdAndEmailByOtpCodeRow, error) {
 	row, err := r.q.GetUserIdAndEmailByOtpCode(ctx, otpHash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -69,7 +72,7 @@ func (r *pgxRepository) GetUserIdAndEmailByOtpCode(ctx context.Context, otpHash 
 	return row, nil
 }
 func (r *pgxRepository) KillOrphanedOTPs(ctx context.Context, email string) error {
-	 err := r.q.DeleteOtpCodesByEmail(ctx, email)
+	err := r.q.DeleteOtpCodesByEmail(ctx, email)
 	if err != nil {
 		return qqerrors.GetDbErrAsQQError(err)
 	}

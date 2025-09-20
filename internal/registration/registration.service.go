@@ -9,9 +9,9 @@ import (
 	mail "github.com/abdurrahimagca/qq-back/internal/platform/mailer"
 	tokenport "github.com/abdurrahimagca/qq-back/internal/platform/token"
 	"github.com/abdurrahimagca/qq-back/internal/user"
+	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	qqerrors "github.com/abdurrahimagca/qq-back/internal/utils/errors"
 )
 
 type RegistrationUsecase interface {
@@ -28,7 +28,13 @@ type registrationUsecase struct {
 	tokenService tokenport.Service
 }
 
-func NewRegistrationUsecase(mailer mail.Service, authService auth.Service, userService user.Service, pool *pgxpool.Pool, tokenService tokenport.Service) RegistrationUsecase {
+func NewRegistrationUsecase(
+	mailer mail.Service,
+	authService auth.Service,
+	userService user.Service,
+	pool *pgxpool.Pool,
+	tokenService tokenport.Service,
+) RegistrationUsecase {
 	return &registrationUsecase{
 		mailer:       mailer,
 		authService:  authService,
@@ -113,7 +119,9 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 
 	return &isNewUser, nil
 }
-func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, emailAddr string, otp string) (tokenport.GenerateTokenResult, error) {
+func (uc *registrationUsecase) VerifyOTPAndLogin(
+	ctx context.Context, emailAddr string, otp string,
+) (tokenport.GenerateTokenResult, error) {
 	tx, err := uc.dbpool.Begin(ctx)
 	if err != nil {
 		return tokenport.GenerateTokenResult{}, err
@@ -139,7 +147,7 @@ func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, emailAddr 
 
 	err = txAuthService.KillOrphanedOTPsByUserID(ctx, user.ID)
 	if err != nil {
-			return tokenport.GenerateTokenResult{}, err
+		return tokenport.GenerateTokenResult{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -156,7 +164,9 @@ func (uc *registrationUsecase) VerifyOTPAndLogin(ctx context.Context, emailAddr 
 
 	return tokenPair, nil
 }
-func (uc *registrationUsecase) RefreshTokens(ctx context.Context, refreshToken string) (tokenport.GenerateTokenResult, error) {
+func (uc *registrationUsecase) RefreshTokens(
+	ctx context.Context, refreshToken string,
+) (tokenport.GenerateTokenResult, error) {
 	tokenResult, err := uc.tokenService.ValidateToken(ctx, tokenport.ValidateTokenParams{
 		Token: refreshToken,
 	})

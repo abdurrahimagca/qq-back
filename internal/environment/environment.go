@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"golang.org/x/net/context"
 )
 
 type ResendEnvironment struct {
-
 	Key string
 }
 type TokenEnvironment struct {
@@ -26,23 +27,22 @@ type R2Environment struct {
 	AccountID       string
 }
 type APIEnvironment struct {
-	
-	Port string
+	Port    string
 	Version string
-	Title string
+
+	Title       string
 	Description string
-	
 }
 type Environment struct {
 	Resend      ResendEnvironment
 	DatabaseURL string
+	Ctx         context.Context
 	Token       TokenEnvironment
 	R2          R2Environment
 	API         APIEnvironment
 }
 
 func Load() (*Environment, error) {
-
 	accessTokenExpireTime, err := strconv.Atoi(getOrThrow("ACCESS_TOKEN_EXPIRE_TIME"))
 	if err != nil {
 		return nil, fmt.Errorf("error converting ACCESS_TOKEN_EXPIRE_TIME to int: %w", err)
@@ -54,10 +54,11 @@ func Load() (*Environment, error) {
 
 	return &Environment{
 		Resend: ResendEnvironment{
-			
+
 			Key: getOrThrow("RESEND_KEY"),
 		},
 		DatabaseURL: getOrThrow("DATABASE_URL"),
+		Ctx:         context.Background(),
 		Token: TokenEnvironment{
 			Secret:                 getOrThrow("TOKEN_SECRET"),
 			AccessTokenExpireTime:  accessTokenExpireTime,
@@ -74,16 +75,14 @@ func Load() (*Environment, error) {
 			AccountID:       getOrThrow("R2_ACCOUNT_ID"),
 		},
 		API: APIEnvironment{
-		
-			Port: getOrThrow("API_PORT"),
-			Version: getOrReturnPlaceholder("API_VERSION", "0.0.1"),
-			Title: getOrReturnPlaceholder("API_TITLE", "QQ API"),
+
+			Port:        getOrThrow("API_PORT"),
+			Version:     getOrReturnPlaceholder("API_VERSION", "0.0.1"),
+			Title:       getOrReturnPlaceholder("API_TITLE", "QQ API"),
 			Description: getOrReturnPlaceholder("API_DESCRIPTION", "QQ API"),
-			
 		},
 	}, nil
 }
-
 
 func getOrThrow(env string) string {
 	if os.Getenv(env) == "" {
@@ -91,7 +90,6 @@ func getOrThrow(env string) string {
 	}
 	return os.Getenv(env)
 }
-
 
 func getOrReturnPlaceholder(env string, placeholder string) string {
 	if os.Getenv(env) == "" {

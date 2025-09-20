@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Service arayüzü, auth domain'inin temel yeteneklerini tanımlar.
 type Service interface {
 	WithTx(tx pgx.Tx) Service
 	GenerateAndSaveOTPForAuth(ctx context.Context, authID pgtype.UUID) (string, error)
@@ -40,19 +39,14 @@ func (s *service) CreateNewAuthForOTPLogin(ctx context.Context, email string) (*
 	return id, nil
 }
 
-
-
 func (s *service) GenerateAndSaveOTPForAuth(ctx context.Context, authID pgtype.UUID) (string, error) {
-	// Generate a random string for OTP code
-	randomBytes := make([]byte, 6)
-	if _, err := rand.Read(randomBytes); err != nil {
+	otpCodeLength := 6
+	randomBytes := make([]byte, otpCodeLength)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
 		return "", err
 	}
-	// Convert to alphanumeric characters
-	for i, b := range randomBytes {
-		randomBytes[i] = 'A' + (b % 26)
-	}
-	otpCode := strings.ToUpper("QQ" + string(randomBytes))
+	otpCode := strings.ToUpper(hex.EncodeToString(randomBytes))
 	otpHash := sha256.Sum256([]byte(otpCode))
 
 	if err := s.repo.CreateOTP(ctx, authID, hex.EncodeToString(otpHash[:])); err != nil {
@@ -80,5 +74,4 @@ func (s *service) VerifyOTP(ctx context.Context, email string, otpCode string) e
 		return ErrInvalidOtpCode
 	}
 	return nil
-
 }

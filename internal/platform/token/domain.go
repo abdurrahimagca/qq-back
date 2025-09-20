@@ -5,8 +5,9 @@ import (
 )
 
 type Claims struct {
-	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
+
+	UserID string `json:"user_id"`
 }
 
 type GenerateTokenParams struct {

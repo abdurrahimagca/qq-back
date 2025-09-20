@@ -9,5 +9,3 @@ var (
 	ErrInvalidEmail   = errors.New("invalid email")
 	ErrNotFound       = errors.New("not found")
 )
-
-

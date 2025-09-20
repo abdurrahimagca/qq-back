@@ -24,14 +24,17 @@ func (j *jwtTokenService) GenerateTokens(ctx context.Context, params GenerateTok
 	accessTokenClaims := &Claims{
 		UserID: params.UserID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   params.UserID,
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(j.environment.Token.AccessTokenExpireTime) * time.Minute)),
-			IssuedAt:  jwt.NewNumericDate(now),
-			Issuer:    j.environment.Token.Issuer,
-			Audience:  jwt.ClaimStrings{j.environment.Token.Audience},
+			Subject: params.UserID,
+			ExpiresAt: jwt.NewNumericDate(
+				now.Add(time.Duration(j.environment.Token.AccessTokenExpireTime) * time.Minute),
+			),
+			IssuedAt: jwt.NewNumericDate(now),
+			Issuer:   j.environment.Token.Issuer,
+			Audience: jwt.ClaimStrings{j.environment.Token.Audience},
 		},
 	}
-	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims).SignedString([]byte(j.environment.Token.Secret))
+	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims).
+		SignedString([]byte(j.environment.Token.Secret))
 	if err != nil {
 		return GenerateTokenResult{}, fmt.Errorf("failed to generate access token: %w", err)
 	}
@@ -39,14 +42,17 @@ func (j *jwtTokenService) GenerateTokens(ctx context.Context, params GenerateTok
 	refreshTokenClaims := &Claims{
 		UserID: params.UserID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   params.UserID,
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(j.environment.Token.RefreshTokenExpireTime) * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(now),
-			Issuer:    j.environment.Token.Issuer,
-			Audience:  jwt.ClaimStrings{j.environment.Token.Audience},
+			Subject: params.UserID,
+			ExpiresAt: jwt.NewNumericDate(
+				now.Add(time.Duration(j.environment.Token.RefreshTokenExpireTime) * time.Hour),
+			),
+			IssuedAt: jwt.NewNumericDate(now),
+			Issuer:   j.environment.Token.Issuer,
+			Audience: jwt.ClaimStrings{j.environment.Token.Audience},
 		},
 	}
-	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims).SignedString([]byte(j.environment.Token.Secret))
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims).
+		SignedString([]byte(j.environment.Token.Secret))
 	if err != nil {
 		return GenerateTokenResult{}, fmt.Errorf("failed to generate refresh token: %w", err)
 	}

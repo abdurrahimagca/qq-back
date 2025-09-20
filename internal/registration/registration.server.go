@@ -42,26 +42,27 @@ func (s *registrationServer) VerifyOtpHandler(ctx context.Context, input *Verify
 	}
 	return &VerifyOtpOutput{
 		Data: struct {
-			AccessToken string `json:"accessToken"`
+			AccessToken  string `json:"accessToken"`
 			RefreshToken string `json:"refreshToken"`
 		}{
-			AccessToken: tokenPair.AccessToken,
+			AccessToken:  tokenPair.AccessToken,
 			RefreshToken: tokenPair.RefreshToken,
 		},
 	}, nil
 }
 
-func (s *registrationServer) RefreshTokensHandler(ctx context.Context, input *RefreshTokensInput) (*RefreshTokensOutput, error) {
+func (s *registrationServer) RefreshTokensHandler(
+	ctx context.Context, input *RefreshTokensInput) (*RefreshTokensOutput, error) {
 	tokenPair, err := s.uc.RefreshTokens(ctx, input.Body.RefreshToken)
 	if err != nil {
 		return nil, qqerrors.GetHumaErrorFromError(err)
 	}
 	return &RefreshTokensOutput{
 		Data: struct {
-			AccessToken string `json:"accessToken"`
+			AccessToken  string `json:"accessToken"`
 			RefreshToken string `json:"refreshToken"`
 		}{
-			AccessToken: tokenPair.AccessToken,
+			AccessToken:  tokenPair.AccessToken,
 			RefreshToken: tokenPair.RefreshToken,
 		},
 	}, nil
@@ -72,4 +73,3 @@ func (s *registrationServer) RegisterRegistrationEndpoints(api huma.API) {
 	huma.Register(api, operations[VerifyOtp], s.VerifyOtpHandler)
 	huma.Register(api, operations[RefreshTokens], s.RefreshTokensHandler)
 }
-

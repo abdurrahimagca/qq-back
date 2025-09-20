@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/abdurrahimagca/qq-back/internal/environment"
@@ -33,7 +33,7 @@ func NewR2Service(environment environment.R2Environment, processor imageprocess.
 		config.WithRegion("auto"),
 	)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Error creating AWS config", "error", err)
 	}
 
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
@@ -52,18 +52,11 @@ func NewR2Service(environment environment.R2Environment, processor imageprocess.
 }
 
 func (s *R2Service) UploadFile(ctx context.Context, file io.Reader) (*string, error) {
-	totalStart := time.Now()
-
 	processedImage, err := s.processor.ImageProcessor(ctx, file)
 	if err != nil {
 		return nil, err
 	}
-
-	uploadStart := time.Now()
-	log.Printf("Starting single image upload...")
-
 	key := fmt.Sprintf("%s-%s", uuid.New().String(), time.Now().Format("2006-01-02"))
-
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.environment.BucketName),
 		Key:         aws.String(key),
@@ -74,10 +67,6 @@ func (s *R2Service) UploadFile(ctx context.Context, file io.Reader) (*string, er
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("Total upload time: %v", time.Since(uploadStart))
-	log.Printf("Total operation time: %v", time.Since(totalStart))
-
 	return &key, nil
 }
 

@@ -32,10 +32,26 @@ func (e *QQError) Unwrap() error {
 }
 
 var errMap = map[string]*QQError{
-	SQL_UNIQUE_VIOLATION:      {Message: ErrUniqueViolation.Error(), StatusCode: http.StatusConflict, Original: ErrUniqueViolation},
-	SQL_FOREIGN_KEY_VIOLATION: {Message: ErrConstraintViolation.Error(), StatusCode: http.StatusBadRequest, Original: ErrConstraintViolation},
-	SQL_CHECK_VIOLATION:       {Message: ErrValidationError.Error(), StatusCode: http.StatusBadRequest, Original: ErrValidationError},
-	SQL_NOT_NULL_VIOLATION:    {Message: ErrValidationError.Error(), StatusCode: http.StatusBadRequest, Original: ErrValidationError},
+	SQL_UNIQUE_VIOLATION: {
+		Message:    ErrUniqueViolation.Error(),
+		StatusCode: http.StatusConflict,
+		Original:   ErrUniqueViolation,
+	},
+	SQL_FOREIGN_KEY_VIOLATION: {
+		Message:    ErrConstraintViolation.Error(),
+		StatusCode: http.StatusBadRequest,
+		Original:   ErrConstraintViolation,
+	},
+	SQL_CHECK_VIOLATION: {
+		Message:    ErrValidationError.Error(),
+		StatusCode: http.StatusBadRequest,
+		Original:   ErrValidationError,
+	},
+	SQL_NOT_NULL_VIOLATION: {
+		Message:    ErrValidationError.Error(),
+		StatusCode: http.StatusBadRequest,
+		Original:   ErrValidationError,
+	},
 }
 
 func GetDbErrAsQQError(err error) *QQError {

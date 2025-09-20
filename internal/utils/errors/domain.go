@@ -12,4 +12,3 @@ var (
 	ErrForbidden           = errors.New("forbidden")
 	ErrInternalServer      = errors.New("internal server error")
 )
-
