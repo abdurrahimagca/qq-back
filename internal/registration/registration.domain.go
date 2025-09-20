@@ -14,18 +14,24 @@ const (
 )
 var operations = map[string]huma.Operation{
 	SendOtp: {
+		Method: "POST",
+		Path: "/auth/send-otp",
 		Summary: "Send OTP code to email for existing users or create new user account",
 		Description: "Send OTP code to email for existing users or create new user account",
 		OperationID: SendOtp,
 		Tags: moduleTags,
 	},
 	VerifyOtp: {
+		Method: "POST",
+		Path: "/auth/verify-otp",
 		Summary: "Verify OTP code",
 		Description: "Verify OTP code",
 		OperationID: VerifyOtp,
 		Tags: moduleTags,
 	},
 	RefreshTokens: {
+		Method: "POST",
+		Path: "/auth/refresh-tokens",
 		Summary: "Refresh tokens",
 		Description: "Refresh tokens",
 		OperationID: RefreshTokens,

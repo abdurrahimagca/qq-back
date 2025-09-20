@@ -37,6 +37,10 @@ services:
       - ACCESS_TOKEN_EXPIRE_TIME=${ACCESS_TOKEN_EXPIRE_TIME}
       - REFRESH_TOKEN_EXPIRE_TIME=${REFRESH_TOKEN_EXPIRE_TIME}
       - AIR_LIVE_RELOAD=${AIR_LIVE_RELOAD}
+      - API_TITLE=${API_TITLE}
+      - API_VERSION=${API_VERSION}
+      - API_DESCRIPTION=${API_DESCRIPTION}
+      - API_PORT=${API_PORT}
     command: air -c docker/.air.toml
     ports:
       - "3003:3003"
