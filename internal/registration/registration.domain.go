@@ -49,9 +49,13 @@ type SendOtpInput struct {
 	}
 }
 
+type SendOtpData struct {
+	IsNewUser bool `json:"isNewUser"`
+}
+
 type SendOtpOutput struct {
-	Data struct {
-		IsNewUser bool `json:"isNewUser"`
+	Body struct {
+		Data SendOtpData
 	}
 }
 
@@ -62,10 +66,14 @@ type VerifyOtpInput struct {
 	}
 }
 
+type TokenData struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 type VerifyOtpOutput struct {
-	Data struct {
-		AccessToken  string `json:"accessToken"`
-		RefreshToken string `json:"refreshToken"`
+	Body struct {
+		Data TokenData
 	}
 }
 
@@ -76,8 +84,7 @@ type RefreshTokensInput struct {
 }
 
 type RefreshTokensOutput struct {
-	Data struct {
-		AccessToken  string `json:"accessToken"`
-		RefreshToken string `json:"refreshToken"`
+	Body struct {
+		Data TokenData
 	}
 }

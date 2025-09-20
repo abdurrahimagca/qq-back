@@ -40,8 +40,8 @@ func (s *service) CreateNewAuthForOTPLogin(ctx context.Context, email string) (*
 }
 
 func (s *service) GenerateAndSaveOTPForAuth(ctx context.Context, authID pgtype.UUID) (string, error) {
-	otpCodeLength := 6
-	randomBytes := make([]byte, otpCodeLength)
+	otpCodeBytesLength := 3
+	randomBytes := make([]byte, otpCodeBytesLength)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
 		return "", err

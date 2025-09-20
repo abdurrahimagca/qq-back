@@ -26,11 +26,14 @@ func (s *registrationServer) SendOtpHandler(ctx context.Context, input *SendOtpI
 	if err != nil {
 		return nil, qqerrors.GetHumaErrorFromError(err)
 	}
+
 	return &SendOtpOutput{
-		Data: struct {
-			IsNewUser bool `json:"isNewUser"`
+		Body: struct {
+			Data SendOtpData
 		}{
-			IsNewUser: *isNewUser,
+			Data: SendOtpData{
+				IsNewUser: *isNewUser,
+			},
 		},
 	}, nil
 }
@@ -41,12 +44,13 @@ func (s *registrationServer) VerifyOtpHandler(ctx context.Context, input *Verify
 		return nil, qqerrors.GetHumaErrorFromError(err)
 	}
 	return &VerifyOtpOutput{
-		Data: struct {
-			AccessToken  string `json:"accessToken"`
-			RefreshToken string `json:"refreshToken"`
+		Body: struct {
+			Data TokenData
 		}{
-			AccessToken:  tokenPair.AccessToken,
-			RefreshToken: tokenPair.RefreshToken,
+			Data: TokenData{
+				AccessToken:  tokenPair.AccessToken,
+				RefreshToken: tokenPair.RefreshToken,
+			},
 		},
 	}, nil
 }
@@ -58,12 +62,13 @@ func (s *registrationServer) RefreshTokensHandler(
 		return nil, qqerrors.GetHumaErrorFromError(err)
 	}
 	return &RefreshTokensOutput{
-		Data: struct {
-			AccessToken  string `json:"accessToken"`
-			RefreshToken string `json:"refreshToken"`
+		Body: struct {
+			Data TokenData
 		}{
-			AccessToken:  tokenPair.AccessToken,
-			RefreshToken: tokenPair.RefreshToken,
+			Data: TokenData{
+				AccessToken:  tokenPair.AccessToken,
+				RefreshToken: tokenPair.RefreshToken,
+			},
 		},
 	}, nil
 }
