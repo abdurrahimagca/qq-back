@@ -213,12 +213,18 @@ func useDeterministicRand(t *testing.T, data []byte) {
 	})
 }
 
-func countOTPs(t *testing.T, pool *pgxpool.Pool, authID pgtype.UUID) int {
+func verifyOTPExists(t *testing.T, h *registrationTestHarness, authID pgtype.UUID, expectedHash string) {
+	t.Helper()
+	var storedHash string
+	err := h.pool.QueryRow(context.Background(), "SELECT code FROM auth_otp_codes WHERE auth_id = $1", authID).Scan(&storedHash)
+	require.NoError(t, err)
+	require.Equal(t, expectedHash, storedHash)
+}
+
+func verifyOTPCount(t *testing.T, h *registrationTestHarness, authID pgtype.UUID, expectedCount int) {
 	t.Helper()
 	var count int
-	require.NoError(
-		t, pool.QueryRow(context.Background(),
-			"SELECT COUNT(*) FROM auth_otp_codes WHERE auth_id = $1", authID).Scan(&count),
-	)
-	return count
+	err := h.pool.QueryRow(context.Background(), "SELECT COUNT(*) FROM auth_otp_codes WHERE auth_id = $1", authID).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, expectedCount, count)
 }

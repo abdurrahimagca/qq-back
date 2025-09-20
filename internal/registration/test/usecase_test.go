@@ -36,8 +36,7 @@ func TestRegisterOrLoginOTP_ExistingUser(t *testing.T) {
 	authID, userRecord := createAuthAndUser(t, h, email, username)
 
 	// Seed stale OTP to ensure cleanup occurs.
-	sql := "INSERT INTO auth_otp_codes (auth_id, code) VALUES ($1, $2)"
-	_, err := h.pool.Exec(ctx, sql, authID, hashOTP("OLDOTP"))
+	err := h.authRepo.CreateOTP(ctx, authID, hashOTP("OLDOTP"))
 	require.NoError(t, err)
 
 	mailerFake := &fakeMailer{}
@@ -63,11 +62,8 @@ func TestRegisterOrLoginOTP_ExistingUser(t *testing.T) {
 	assert.Contains(t, emailParams.Body, otpCode)
 
 	// Only one OTP should exist for the auth id and it should be the new hash.
-	assert.Equal(t, 1, countOTPs(t, h.pool, authID))
-	var storedHash string
-	require.NoError(
-		t, h.pool.QueryRow(ctx, "SELECT code FROM auth_otp_codes WHERE auth_id = $1", authID).Scan(&storedHash))
-	assert.Equal(t, hashOTP(otpCode), storedHash)
+	verifyOTPCount(t, h, authID, 1)
+	verifyOTPExists(t, h, authID, hashOTP(otpCode))
 
 	retrieved := fetchUserByEmail(t, user.NewService(h.userRepo), ctx, email)
 	assert.Equal(t, userRecord.ID, retrieved.ID)
@@ -211,7 +207,7 @@ func TestRefreshTokens_Success(t *testing.T) {
 	assert.Equal(t, userRecord.ID.String(), call.UserID)
 
 	// Ensure stored auth remains linked
-	assert.Equal(t, 0, countOTPs(t, h.pool, authID))
+	verifyOTPCount(t, h, authID, 0)
 }
 
 func TestRefreshTokens_EmptyUserIDClaims(t *testing.T) {

@@ -30,13 +30,17 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		// Extract Bearer token
-		parts := strings.Split(authHeader, " ")
+		parts := strings.Fields(authHeader)
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
 			return
 		}
 
-		token := parts[1]
+		token := strings.TrimSpace(parts[1])
+		if token == "" {
+			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+			return
+		}
 
 		// Validate token
 		tokenResult, err := m.tokenService.ValidateToken(r.Context(), tokenport.ValidateTokenParams{
@@ -82,14 +86,19 @@ func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
 		}
 
 		// Extract Bearer token
-		parts := strings.Split(authHeader, " ")
+		parts := strings.Fields(authHeader)
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			// Invalid format but optional, continue without user
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		token := parts[1]
+		token := strings.TrimSpace(parts[1])
+		if token == "" {
+			// Empty token, continue without user
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		// Try to validate token
 		tokenResult, err := m.tokenService.ValidateToken(r.Context(), tokenport.ValidateTokenParams{

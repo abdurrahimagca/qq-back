@@ -66,14 +66,12 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 		return nil, err
 	}
 
-	if foundUser.ID.Valid {
+	var authID pgtype.UUID
+	if foundUser != nil && foundUser.ID.Valid {
 		isNewUser = false
+		authID = foundUser.AuthID
 	} else {
 		isNewUser = true
-	}
-
-	var authID pgtype.UUID
-	if !foundUser.ID.Valid {
 		authIDPtr, createAuthErr := txAuthService.CreateNewAuthForOTPLogin(ctx, emailAddr)
 		if createAuthErr != nil {
 			return nil, createAuthErr
@@ -84,8 +82,6 @@ func (uc *registrationUsecase) RegisterOrLoginOTP(ctx context.Context, emailAddr
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		authID = foundUser.AuthID
 	}
 
 	err = txAuthService.KillOrphanedOTPsByUserID(ctx, foundUser.ID)
